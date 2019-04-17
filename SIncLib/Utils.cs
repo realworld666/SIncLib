@@ -7,20 +7,22 @@ namespace SIncLib
 {
     public class Utils
     {
-        public static void AddButton(string Text, UnityAction Action, ref List<GameObject> Buttons)
+        public static Button AddButton(string Text, UnityAction Action, ref List<GameObject> Buttons)
         {
             Button x = WindowManager.SpawnButton();
             x.GetComponentInChildren<Text>().text = Text;
             x.onClick.AddListener(Action);
             Buttons.Add(x.gameObject);
+            return x;
         }
         
-        public static void AddButton(string Text, Rect Button, UnityAction Action)
+        public static Button AddButton(string Text, Rect Button, UnityAction Action)
         {
             Button x = WindowManager.SpawnButton();
             x.GetComponentInChildren<UnityEngine.UI.Text>().text = Text;
             x.onClick.AddListener(Action);
             WindowManager.AddElementToWindow(x.gameObject, SIncLibUI.Window, Button, new Rect(0, 0, 0, 0));
+            return x;
         }
 
         public static void AddInputBox(string Text, Rect InputBox, UnityAction<string> Action)
@@ -34,7 +36,7 @@ namespace SIncLib
         public static void AddLabel(string Text, Rect Label)
         {
             Text x = WindowManager.SpawnLabel();
-            x.text = "<= This cell is universal for\nwinice, Stock, Active Users";
+            x.text = Text;
             WindowManager.AddElementToWindow(x.gameObject, SIncLibUI.Window, Label, new Rect(0, 0, 0, 0));
         }
 
