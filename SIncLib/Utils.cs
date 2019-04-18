@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -40,13 +41,13 @@ namespace SIncLib
             WindowManager.AddElementToWindow(x.gameObject, SIncLibUI.Window, Label, new Rect(0, 0, 0, 0));
         }
 
-        public static void AddToggle(string Text, bool isOn, UnityAction<bool> Action, ref List<GameObject> Toggles)
+        public static void AddToggle(string Text, Rect rect, bool isOn, UnityAction<bool> Action)
         {
-            Toggle Toggle = WindowManager.SpawnCheckbox();
-            Toggle.GetComponentInChildren<UnityEngine.UI.Text>().text = Text;
-            Toggle.isOn = isOn;
-            Toggle.onValueChanged.AddListener(Action);
-            Toggles.Add(Toggle.gameObject);
+            Toggle toggle = WindowManager.SpawnCheckbox();
+            toggle.GetComponentInChildren<UnityEngine.UI.Text>().text = Text;
+            toggle.isOn = isOn;
+            toggle.onValueChanged.AddListener(Action);
+            WindowManager.AddElementToWindow(toggle.gameObject, SIncLibUI.Window, rect, new Rect(0, 0, 0, 0));
         }
 
         public static void DoLoops(GameObject[] Buttons, GameObject[] Col1, GameObject[] Col2, GameObject[] Col3)
