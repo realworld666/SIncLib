@@ -48,11 +48,11 @@ namespace SIncLib
 
         private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == null)
+            if (scene == null || scene.name == null  )
                 return;
 
             //Other scenes include MainScene and Customization
-            if (scene.name.Equals("MainMenu") && SIncLibUI.btn != null)
+            if (scene.name.Equals("MainMenu") && SIncLibUI.btn != null && SIncLibUI.btn.gameObject != null)
             {
                 Destroy(SIncLibUI.btn.gameObject);
             }
@@ -321,13 +321,15 @@ namespace SIncLib
             chosenEmployees = chosenEmployees.Distinct().ToList();
             
             // Find how many staff we have stolen from each team
-            var teamCounts = chosenEmployees.Where(e=>e.GetTeam() != team).GroupBy(e=>e.Team)
+            IEnumerable<Actor> newActors = chosenEmployees.Where(e=>e.GetTeam() != team && e.GetTeam() != null);
+            Console.Log("newActors = "+newActors.Count());
+            var teamCounts = newActors.GroupBy(e=>e.Team)
                                             .Select(group=>new
                                                            {
                                                                Key   = group.Key,
                                                                Count = group.Count()
-                                                           });
-
+                                                           }).ToList();
+            Console.Log("teamCounts = "+teamCounts.Count);
             // Add new team members
             foreach (Actor employee in chosenEmployees)
             {
@@ -349,7 +351,7 @@ namespace SIncLib
             }
             
             unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
-            Console.Log(string.Format("After reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
+            Console.Log(string.Format("After final reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
             if ( unattachedStaff.Any() )
             {
                 HUD.Instance.AddPopupMessage(unattachedStaff.Count() + " staff are without a team following reassignemnt", "Cogs", PopupManager.PopUpAction.None,

@@ -99,7 +99,8 @@ namespace SIncLib
 
             Utils.AddLabel("Adjust only:", new Rect(10, 80, 250, 32));
             Utils.AddToggle("Code", new Rect(10, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Code) != 0, (state) =>
+                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Code) != 0,
+                            (state) =>
                             {
                                 if (state)
                                     SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Code;
@@ -109,7 +110,8 @@ namespace SIncLib
                                 }
                             });
             Utils.AddToggle("Art", new Rect(100, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Art) != 0, (state) =>
+                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Art) != 0,
+                            (state) =>
                             {
                                 if (state)
                                     SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Art;
@@ -126,14 +128,15 @@ namespace SIncLib
                                     SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Design;
                                 else
                                 {
-                                    SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Design;
+                                    SIncLibBehaviour.Instance.AdjustDepartment &=
+                                        ~SIncLibBehaviour.AdjustHRFlags.Design;
                                 }
                             });
 
             Utils.AddToggle("Transfer Idle Only", new Rect(10, 140, 250, 32),
                             SIncLibBehaviour.Instance.IdleOnly,
                             (state) => { SIncLibBehaviour.Instance.IdleOnly = state; });
-            
+
             Utils.AddToggle("Adjust HR rules", new Rect(200, 140, 250, 32),
                             SIncLibBehaviour.Instance.AdjustHR,
                             (state) => { SIncLibBehaviour.Instance.AdjustHR = state; });
