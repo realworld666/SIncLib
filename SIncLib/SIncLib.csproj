@@ -47,6 +47,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="SIncLibAutoDevUI.cs" />
         <Compile Include="SIncLibBehaviour.cs" />
         <Compile Include="SIncLibMod.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />

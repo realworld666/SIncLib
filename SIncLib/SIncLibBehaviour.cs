@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Console = DevConsole.Console;
@@ -12,7 +10,7 @@ namespace SIncLib
     {
         public static SIncLibBehaviour Instance;
 
-        private int _adjustHR = 0;
+        private int _adjustDepartment = 0;
 
         /// <summary>
         /// For some reason unknown to me, the dynamic compiler does not like this when its an enum
@@ -24,13 +22,14 @@ namespace SIncLib
             public const int Design = 4;
         };
 
-        public int AdjustHR
+        public int AdjustDepartment
         {
-            get { return _adjustHR; }
-            set { _adjustHR = value; }
+            get { return _adjustDepartment; }
+            set { _adjustDepartment = value; }
         }
 
         public bool IdleOnly { get; set; }
+        public bool AdjustHR { get; set; }
 
         private void Awake()
         {
@@ -49,7 +48,7 @@ namespace SIncLib
 
         private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
         {
-            if (scene == null)
+            if (scene.name == null)
                 return;
 
             //Other scenes include MainScene and Customization
@@ -101,7 +100,7 @@ namespace SIncLib
             }
 
             // Setup HR so that the correct number of employees are hired, should anyone leave
-            if (AdjustHR != 0)
+            if (AdjustDepartment != 0)
             {
                 int MaxArt    = 0;
                 int MaxCode   = 0;
@@ -124,20 +123,23 @@ namespace SIncLib
 
                     int[] employeeRatio = workItem.Type.GetOptimalEmployeeCount(devTime, workItem.CodeArtRatio);
 
-                    if ((AdjustHR & AdjustHRFlags.Art) != 0)
+                    if ((AdjustDepartment & AdjustHRFlags.Art) != 0)
                         MaxArt = Mathf.Max(MaxArt, Mathf.CeilToInt(employeeRatio[1] * (1f - workItem.CodeArtRatio)));
-                    if ((AdjustHR & AdjustHRFlags.Code) != 0)
+                    if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
                         MaxCode = Mathf.Max(MaxCode, Mathf.CeilToInt(employeeRatio[1] * workItem.CodeArtRatio));
-                    if ((AdjustHR & AdjustHRFlags.Design) != 0)
+                    if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
                         MaxDesign = Mathf.Max(MaxDesign, employeeRatio[0]);
                 }
 
-                if ((AdjustHR & AdjustHRFlags.Art) != 0)
-                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)] = MaxArt;
-                if ((AdjustHR & AdjustHRFlags.Code) != 0)
-                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)] = MaxCode;
-                if ((AdjustHR & AdjustHRFlags.Design) != 0)
-                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)] = MaxDesign;
+                if (AdjustHR)
+                {
+                    if ((AdjustDepartment & AdjustHRFlags.Art) != 0)
+                        team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)] = MaxArt;
+                    if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
+                        team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)] = MaxCode;
+                    if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
+                        team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)] = MaxDesign;
+                }
 
                 Console.Log(string.Format("Total staff required: C: {0} D: {1} A: {2}",
                                           team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)],
@@ -207,38 +209,43 @@ namespace SIncLib
                                           numCodersRequired, numDesignersRequired, numArtistsRequired));
 
                 // Coders
-
-                chosenEmployees.AddRange(actors
-                                         .OrderByDescending(a =>
-                                                                a.employee != null
-                                                                    ? a.employee
-                                                                       .GetSpecialization(Employee.EmployeeRole.Programmer,
-                                                                                          specialization.Key, true)
-                                                                    : (float?) null)
-                                         .Take(numCodersRequired));
-
+                if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
+                {
+                    chosenEmployees.AddRange(actors
+                                             .OrderByDescending(a =>
+                                                                    a.employee != null
+                                                                        ? a.employee
+                                                                           .GetSpecialization(Employee.EmployeeRole.Programmer,
+                                                                                              specialization.Key, true)
+                                                                        : (float?) null)
+                                             .Take(numCodersRequired));
+                }
 
                 // Designers
-
-                chosenEmployees.AddRange(actors
-                                         .OrderByDescending(a =>
-                                                                a.employee != null
-                                                                    ? a.employee
-                                                                       .GetSpecialization(Employee.EmployeeRole.Designer,
-                                                                                          specialization.Key, true)
-                                                                    : (float?) null)
-                                         .Take(numDesignersRequired));
+                if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
+                {
+                    chosenEmployees.AddRange(actors
+                                             .OrderByDescending(a =>
+                                                                    a.employee != null
+                                                                        ? a.employee
+                                                                           .GetSpecialization(Employee.EmployeeRole.Designer,
+                                                                                              specialization.Key, true)
+                                                                        : (float?) null)
+                                             .Take(numDesignersRequired));
+                }
 
                 // Artists
-
-                chosenEmployees.AddRange(actors
-                                         .OrderByDescending(a =>
-                                                                a.employee != null
-                                                                    ? a.employee
-                                                                       .GetSpecialization(Employee.EmployeeRole.Artist,
-                                                                                          specialization.Key, true)
-                                                                    : (float?) null)
-                                         .Take(numArtistsRequired));
+                if ((AdjustDepartment & AdjustHRFlags.Art) != 0)
+                {
+                    chosenEmployees.AddRange(actors
+                                             .OrderByDescending(a =>
+                                                                    a.employee != null
+                                                                        ? a.employee
+                                                                           .GetSpecialization(Employee.EmployeeRole.Artist,
+                                                                                              specialization.Key, true)
+                                                                        : (float?) null)
+                                             .Take(numArtistsRequired));
+                }
             }
 
             chosenEmployees = chosenEmployees.Distinct().ToList();
@@ -248,6 +255,21 @@ namespace SIncLib
             {
                 // Don't kick out the lead
                 if (actor.employee.IsRole(Employee.RoleBit.Lead))
+                {
+                    continue;
+                }
+
+                if ((AdjustDepartment & AdjustHRFlags.Art) == 0 && actor.employee.IsRole(Employee.RoleBit.Artist))
+                {
+                    continue;
+                }
+
+                if ((AdjustDepartment & AdjustHRFlags.Code) == 0 && actor.employee.IsRole(Employee.RoleBit.Programmer))
+                {
+                    continue;
+                }
+
+                if ((AdjustDepartment & AdjustHRFlags.Design) == 0 && actor.employee.IsRole(Employee.RoleBit.Designer))
                 {
                     continue;
                 }
@@ -295,13 +317,44 @@ namespace SIncLib
                                                         .Take(team.HR.MaxEmployees
                                                                   [EmployeeIndex(Employee.EmployeeRole.Artist)]));
             }
-
+            
             chosenEmployees = chosenEmployees.Distinct().ToList();
+            
+            // Find how many staff we have stolen from each team
+            var teamCounts = chosenEmployees.Where(e=>e.GetTeam() != team).GroupBy(e=>e.Team)
+                                            .Select(group=>new
+                                                           {
+                                                               Key   = group.Key,
+                                                               Count = group.Count()
+                                                           });
 
             // Add new team members
             foreach (Actor employee in chosenEmployees)
             {
                 employee.Team = team.Name;
+            }
+            
+            // Which staff are still unattached
+            foreach (var teamCount in teamCounts)
+            {
+                unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
+                Console.Log(string.Format("After reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
+                
+                Console.Log(string.Format("Team {0} missing {1} staff.", teamCount.Key, teamCount.Count));
+                IEnumerable<Actor> takenStaff = unattachedStaff.Take(Mathf.Min(unattachedStaff.Count(), teamCount.Count));
+                foreach (Actor employee in takenStaff)
+                {
+                    employee.Team = teamCount.Key;
+                }
+            }
+            
+            unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
+            Console.Log(string.Format("After reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
+            if ( unattachedStaff.Any() )
+            {
+                HUD.Instance.AddPopupMessage(unattachedStaff.Count() + " staff are without a team following reassignemnt", "Cogs", PopupManager.PopUpAction.None,
+                                             0, PopupManager.NotificationSound.Issue, Color.black, 0f,
+                                             PopupManager.PopupIDs.None);
             }
 
             error = null;

@@ -34,11 +34,14 @@ namespace SIncLib
             WindowManager.AddElementToWindow(x.gameObject, SIncLibUI.Window, InputBox, new Rect(0, 0, 0, 0));
         }
 
-        public static void AddLabel(string Text, Rect Label)
+        public static void AddLabel(string Text, Rect Label, GUIWindow window = null)
         {
+            if ( window == null )
+                window = SIncLibUI.Window;
+            
             Text x = WindowManager.SpawnLabel();
             x.text = Text;
-            WindowManager.AddElementToWindow(x.gameObject, SIncLibUI.Window, Label, new Rect(0, 0, 0, 0));
+            WindowManager.AddElementToWindow(x.gameObject, window, Label, new Rect(0, 0, 0, 0));
         }
 
         public static void AddToggle(string Text, Rect rect, bool isOn, UnityAction<bool> Action)

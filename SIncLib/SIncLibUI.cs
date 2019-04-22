@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Console = DevConsole.Console;
 
 namespace SIncLib
 {
@@ -29,8 +30,11 @@ namespace SIncLib
 
         public override void OnDeactivate()
         {
-            Destroy(btn.gameObject);
-            Destroy(Window.gameObject);
+            if (btn != null)
+                Destroy(btn.gameObject);
+            if (Window != null)
+                Destroy(Window.gameObject);
+            shown = false;
         }
 
         public override void OnActivate()
@@ -42,7 +46,7 @@ namespace SIncLib
         }
 
         public static  GUIWindow       Window;
-        private static string          title    = "SIncLib by Otters Pocket - v"+SIncLibMod.Version;
+        private static string          title    = "SIncLib by Otters Pocket - v" + SIncLibMod.Version;
         public static  bool            shown    = false;
         private static HashSet<string> DevTeams = new HashSet<string>();
         private static Text            TeamText;
@@ -93,44 +97,54 @@ namespace SIncLib
             SourceText = sourceButton.GetComponentInChildren<Text>();
             UpdateTeamText();
 
-            Utils.AddLabel("Adjust HR Team Size:", new Rect(10, 80, 250, 32));
+            Utils.AddLabel("Adjust only:", new Rect(10, 80, 250, 32));
             Utils.AddToggle("Code", new Rect(10, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustHR & SIncLibBehaviour.AdjustHRFlags.Code) != 0, (state) =>
+                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Code) != 0, (state) =>
                             {
                                 if (state)
-                                    SIncLibBehaviour.Instance.AdjustHR |= SIncLibBehaviour.AdjustHRFlags.Code;
+                                    SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Code;
                                 else
                                 {
-                                    SIncLibBehaviour.Instance.AdjustHR &= ~SIncLibBehaviour.AdjustHRFlags.Code;
+                                    SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Code;
                                 }
                             });
             Utils.AddToggle("Art", new Rect(100, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustHR & SIncLibBehaviour.AdjustHRFlags.Art) != 0, (state) =>
+                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Art) != 0, (state) =>
                             {
                                 if (state)
-                                    SIncLibBehaviour.Instance.AdjustHR |= SIncLibBehaviour.AdjustHRFlags.Art;
+                                    SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Art;
                                 else
                                 {
-                                    SIncLibBehaviour.Instance.AdjustHR &= ~SIncLibBehaviour.AdjustHRFlags.Art;
+                                    SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Art;
                                 }
                             });
             Utils.AddToggle("Design", new Rect(200, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustHR & SIncLibBehaviour.AdjustHRFlags.Design) != 0,
+                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Design) != 0,
                             (state) =>
                             {
                                 if (state)
-                                    SIncLibBehaviour.Instance.AdjustHR |= SIncLibBehaviour.AdjustHRFlags.Design;
+                                    SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Design;
                                 else
                                 {
-                                    SIncLibBehaviour.Instance.AdjustHR &= ~SIncLibBehaviour.AdjustHRFlags.Design;
+                                    SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Design;
                                 }
                             });
 
             Utils.AddToggle("Transfer Idle Only", new Rect(10, 140, 250, 32),
                             SIncLibBehaviour.Instance.IdleOnly,
                             (state) => { SIncLibBehaviour.Instance.IdleOnly = state; });
+            
+            Utils.AddToggle("Adjust HR rules", new Rect(200, 140, 250, 32),
+                            SIncLibBehaviour.Instance.AdjustHR,
+                            (state) => { SIncLibBehaviour.Instance.AdjustHR = state; });
 
-            Utils.AddButton("Optimise Team", new Rect(210, 160, 250, 32), () => OptimiseTeam());
+            Utils.AddButton("Optimise Team", new Rect(210, 180, 250, 32), () => OptimiseTeam());
+            Utils.AddButton("Show Auto Dev", new Rect(210, 220, 250, 32), () => ShowAutoDev());
+        }
+
+        private static void ShowAutoDev()
+        {
+            SIncLibAutoDevUI.ShowWindow();
         }
 
         private static void OptimiseTeam()
@@ -159,7 +173,11 @@ namespace SIncLib
 
             var    team  = GameSettings.Instance.sActorManager.Teams[TeamText.text];
             string error = "";
-            if (!SIncLibBehaviour.Instance.TransferBestAvailableStaff(team, DevTeams.Select(t=>GameSettings.Instance.sActorManager.Teams[t]).ToArray(), out error))
+            if (!SIncLibBehaviour.Instance.TransferBestAvailableStaff(team,
+                                                                      DevTeams.Select(t => GameSettings
+                                                                                           .Instance.sActorManager
+                                                                                           .Teams[t]).ToArray(),
+                                                                      out error))
             {
                 HUD.Instance.AddPopupMessage("Could not optimise team: " + error, "Exclamation",
                                              PopupManager.PopUpAction.None, 0U, PopupManager.NotificationSound.Issue,
