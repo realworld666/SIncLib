@@ -303,7 +303,33 @@ namespace SIncLib
                 {
                     return o.GetType().ToString();
                 }
-            }, null, true);
+            }, (o, o1) =>
+            {
+                string phase1 = "";
+                string phase2 = "";
+                
+                if (o is SoftwareAlpha)
+                {
+                    var sa = o as SoftwareAlpha;
+                    if (sa.InBeta)
+                        phase1 = "Beta";
+                    if (sa.InDelay)
+                        phase1 = "Delay";
+                    phase1 = "Alpha";
+                }
+                
+                if (o1 is SoftwareAlpha)
+                {
+                    var sa = o as SoftwareAlpha;
+                    if (sa.InBeta)
+                        phase2 = "Beta";
+                    if (sa.InDelay)
+                        phase2 = "Delay";
+                    phase2 = "Alpha";
+                }
+                
+                return String.CompareOrdinal(phase1, phase2);
+            }, true);
             listView.AddColumn("Followers", o =>
             {
                 SoftwareWorkItem item = o as SoftwareWorkItem;
