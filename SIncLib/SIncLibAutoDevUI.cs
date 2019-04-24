@@ -288,7 +288,7 @@ namespace SIncLib
                 Debug.Assert(item != null);
                 return item.Category();
             }, null, true);
-            listView.AddColumn("Phase", o =>
+            listView.AddFilterColumn("Phase", o =>
             {
                 if (o is SoftwareAlpha)
                 {
@@ -329,7 +329,22 @@ namespace SIncLib
                 }
                 
                 return String.CompareOrdinal(phase1, phase2);
-            }, true);
+            }, true, GUIListView.FilterType.Name, o =>
+            {
+                if (o is SoftwareAlpha)
+                {
+                    var sa = o as SoftwareAlpha;
+                    if (sa.InBeta)
+                        return "Beta";
+                    if (sa.InDelay)
+                        return "Delay";
+                    return "Alpha";
+                }
+                else
+                {
+                    return o.GetType().ToString();
+                }
+            });
             listView.AddColumn("Followers", o =>
             {
                 SoftwareWorkItem item = o as SoftwareWorkItem;
@@ -405,8 +420,74 @@ namespace SIncLib
             {
                 SoftwareWorkItem item = o as SoftwareWorkItem;
                 Debug.Assert(item != null);
-                item.PromoteAction();
+                PromoteSoftware(item);
             }, false);
+            listView.AddActionColumn("Market", o =>
+            {
+                SoftwareWorkItem item = o as SoftwareWorkItem;
+                Debug.Assert(item != null);
+                PromoteSoftware(item);
+            }, false);
+        }
+
+        private static void PromoteSoftware(SoftwareWorkItem item)
+        {
+            AutoDevWorkItem autoDev = GetAutoDevWorkItem(item);
+            AutoDevWorkItem.AutoDevItem autoDevItem = null;
+            if ( autoDev != null ) 
+                autoDevItem = autoDev.Items.FirstOrDefault(adi => adi.Alpha == item);
+
+            if (autoDev == null || autoDevItem == null)
+            {
+                Console.LogError("Could not find auto dev task for current work item");
+                return;
+            }
+            
+            if (item is SoftwareAlpha)
+            {
+                SoftwareAlpha alpha = item as SoftwareAlpha;
+                if (alpha.InBeta)
+                {
+                    autoDevItem.AlreadyDev = autoDevItem.MonthsToSpend;
+                }
+                if (!alpha.InDelay)
+                {
+                    item.PromoteAction();
+                    if (!alpha.InDelay)
+                    {
+                        if (autoDev.PrintingCopies > 0U && !autoDevItem.hasPrinted)
+                        {
+                            uint num = autoDev.PrintingCopies;
+                            if (autoDev.PrintingCopyRel)
+                                num = (uint) ((double) item.Followers *
+                                              ((double) autoDev.PrintingCopies / 100.0));
+                            autoDevItem.hasPrinted = true;
+                            PrintJob printJob = new PrintJob(alpha.ForceID(), 1f)
+                            {
+                                Limit = new uint?(num)
+                            };
+                            GameSettings.Instance.PrintOrders[printJob.ID] = printJob;
+                            HUD.Instance.distributionWindow.RefreshOrders();
+                        }
+                    }
+                }
+            }
+
+        }
+
+        private static AutoDevWorkItem GetAutoDevWorkItem(SoftwareWorkItem item)
+        {
+            var autoDevTasks = GameSettings.Instance.MyCompany.WorkItems.Where(wi => wi is AutoDevWorkItem);
+            foreach (var workItem in autoDevTasks)
+            {
+                var autoDev = (AutoDevWorkItem) workItem;
+                if (autoDev.Items.Any(adi=> adi.Alpha == item))
+                {
+                    return workItem as AutoDevWorkItem;
+                }
+            }
+
+            return null;
         }
 
         private static void NameColumn(GUIListView listView)
