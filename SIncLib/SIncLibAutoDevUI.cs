@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using DevConsole;
 using UnityEngine;
 using UnityEngine.UI;
 using Console = DevConsole.Console;
-using Debug = UnityEngine.Debug;
 
 namespace SIncLib
 {
@@ -14,11 +11,11 @@ namespace SIncLib
     {
         private static GUIWindow   Window;
         private static string      title = "Project Management Task Manager";
-        public static  bool        shown = false;
+        public static  bool        shown;
         private        GUIListView _devList;
         private        GUIListView _supportList;
         private        GUIListView _marketList;
-        private        long         _lastHash;
+        private        long        _lastHash;
 
         public static SIncLibAutoDevUI Instance { get; set; }
 
@@ -55,10 +52,10 @@ namespace SIncLib
             long hash = 0;
             if (!shown) return;
             hash += GameSettings.Instance.MyCompany.WorkItems.Where(wi => wi.AutoDev)
-                                .Sum(item => (long)((float)item.GetHashCode() * 0.0001f));
+                                .Sum(item => (long) ((float) item.GetHashCode() * 0.0001f));
 
             if (hash == _lastHash) return;
-            Console.Log(string.Format("Refreshing list {0}/{1}",hash,_lastHash));
+            Console.Log(string.Format("Refreshing list {0}/{1}", hash, _lastHash));
             _lastHash = hash;
             AssignDevItems();
             AssignSupportItems();
@@ -128,7 +125,7 @@ namespace SIncLib
         private void AssignDevItems()
         {
             IEnumerable<WorkItem> devItems =
-                GameSettings.Instance.MyCompany.WorkItems.Where(wi => wi.AutoDev && wi is SoftwareWorkItem);
+                GameSettings.Instance.MyCompany.WorkItems.Where(wi => wi != null && wi.AutoDev && wi is SoftwareWorkItem);
             _devList.Items = new EventList<object>(devItems.Cast<object>().ToList());
             _devList.Initialize();
         }
@@ -210,7 +207,7 @@ namespace SIncLib
                 SupportWork item1 = o1 as SupportWork;
                 Debug.Assert(item != null);
                 Debug.Assert(item1 != null);
-                return (int) (item.TargetProduct.Userbase - item1.TargetProduct.Userbase);
+                return item.TargetProduct.Userbase - item1.TargetProduct.Userbase;
             }, true);
             supportList.AddColumn("BugsFixed", o =>
             {
@@ -223,8 +220,8 @@ namespace SIncLib
                 SupportWork item1 = o1 as SupportWork;
                 Debug.Assert(item != null);
                 Debug.Assert(item1 != null);
-                return (int) ((item.StartBugs - item.TargetProduct.Bugs) -
-                              (item1.StartBugs - item1.TargetProduct.Bugs));
+                return (item.StartBugs - item.TargetProduct.Bugs) -
+                       (item1.StartBugs - item1.TargetProduct.Bugs);
             }, true);
             supportList.AddColumn("BugsVerified", o =>
             {
@@ -237,7 +234,7 @@ namespace SIncLib
                 SupportWork item1 = o1 as SupportWork;
                 Debug.Assert(item != null);
                 Debug.Assert(item1 != null);
-                return (int) ((item.Verified) - (item1.Verified));
+                return (item.Verified) - (item1.Verified);
             }, true);
             supportList.AddColumn("TicketsQueued", o =>
             {
@@ -250,7 +247,7 @@ namespace SIncLib
                 SupportWork item1 = o1 as SupportWork;
                 Debug.Assert(item != null);
                 Debug.Assert(item1 != null);
-                return (int) ((item.Tickets.Count) - (item1.Tickets.Count));
+                return (item.Tickets.Count) - (item1.Tickets.Count);
             }, true);
             supportList.AddColumn("TicketsMissed", o =>
             {
@@ -263,7 +260,7 @@ namespace SIncLib
                 SupportWork item1 = o1 as SupportWork;
                 Debug.Assert(item != null);
                 Debug.Assert(item1 != null);
-                return (int) ((item.Missed) - (item1.Missed));
+                return (item.Missed) - (item1.Missed);
             }, true);
             supportList.AddActionColumn("Assign", o =>
             {
@@ -282,12 +279,10 @@ namespace SIncLib
         private void SetupDevColumnDefinition(GUIListView listView)
         {
             NameColumn(listView);
-            listView.AddColumn("Status", o =>
-            {
-                WorkItem item = o as WorkItem;
-                Debug.Assert(item != null);
-                return item.Category();
-            }, null, true);
+            listView.AddFilterColumn("Status", GetDevStatus,
+                                     (o, o1) => String.Compare(GetDevStatus(o), GetDevStatus(o1),
+                                                               StringComparison.Ordinal), true,
+                                     GUIListView.FilterType.Name, GetDevStatus);
             listView.AddFilterColumn("Phase", o =>
             {
                 if (o is SoftwareAlpha)
@@ -299,15 +294,13 @@ namespace SIncLib
                         return "Delay";
                     return "Alpha";
                 }
-                else
-                {
-                    return o.GetType().ToString();
-                }
+
+                return o.GetType().ToString();
             }, (o, o1) =>
             {
                 string phase1 = "";
                 string phase2 = "";
-                
+
                 if (o is SoftwareAlpha)
                 {
                     var sa = o as SoftwareAlpha;
@@ -317,7 +310,7 @@ namespace SIncLib
                         phase1 = "Delay";
                     phase1 = "Alpha";
                 }
-                
+
                 if (o1 is SoftwareAlpha)
                 {
                     var sa = o as SoftwareAlpha;
@@ -327,7 +320,7 @@ namespace SIncLib
                         phase2 = "Delay";
                     phase2 = "Alpha";
                 }
-                
+
                 return String.CompareOrdinal(phase1, phase2);
             }, true, GUIListView.FilterType.Name, o =>
             {
@@ -340,10 +333,8 @@ namespace SIncLib
                         return "Delay";
                     return "Alpha";
                 }
-                else
-                {
-                    return o.GetType().ToString();
-                }
+
+                return o.GetType().ToString();
             });
             listView.AddColumn("Followers", o =>
             {
@@ -366,10 +357,8 @@ namespace SIncLib
                     return string.Format("{0:0.##}/{1:0.##}", (item.CodeProgress * item.CodeDevTime),
                                          item.CodeDevTime);
                 }
-                else
-                {
-                    return "n/a";
-                }
+
+                return "n/a";
             }, (o, o1) =>
             {
                 SoftwareAlpha item  = o as SoftwareAlpha;
@@ -386,10 +375,8 @@ namespace SIncLib
                     return string.Format("{0:0.##}/{1:0.##}", (item.ArtProgress * item.ArtDevTime),
                                          item.ArtDevTime);
                 }
-                else
-                {
-                    return "n/a";
-                }
+
+                return "n/a";
             }, (o, o1) =>
             {
                 SoftwareAlpha item  = o as SoftwareAlpha;
@@ -416,25 +403,41 @@ namespace SIncLib
                 float         val2  = item1 != null && item.InBeta ? item1.FixedBugs : float.MaxValue;
                 return (int) (val1 - val2);
             }, true);
+            listView.AddActionColumn("Market", o =>
+                        {
+                            SoftwareWorkItem item = o as SoftwareWorkItem;
+                            Debug.Assert(item != null);
+                            HandleMarketing(item);
+                        }, false); 
             listView.AddActionColumn("Promote", o =>
             {
                 SoftwareWorkItem item = o as SoftwareWorkItem;
                 Debug.Assert(item != null);
                 PromoteSoftware(item);
             }, false);
-            listView.AddActionColumn("Market", o =>
-            {
-                SoftwareWorkItem item = o as SoftwareWorkItem;
-                Debug.Assert(item != null);
-                PromoteSoftware(item);
-            }, false);
+            
         }
 
-        private static void PromoteSoftware(SoftwareWorkItem item)
+        private string GetDevStatus(object o)
         {
-            AutoDevWorkItem autoDev = GetAutoDevWorkItem(item);
+            SoftwareWorkItem item = o as SoftwareWorkItem;
+            Debug.Assert(item != null);
+            var autoDev = GetAutoDevWorkItem(item);
+            if ( autoDev == null )
+                return "Error";
+            if (autoDev.Paused)
+                return "Paused";
+            var autoDevItem = autoDev.Items.FirstOrDefault(i=>item == i.Alpha);
+            if ( autoDevItem != null && autoDevItem.Queued)
+                return "Queued";
+            return "Active";
+        }
+
+        private void HandleMarketing(SoftwareWorkItem item)
+        {
+            AutoDevWorkItem             autoDev     = GetAutoDevWorkItem(item);
             AutoDevWorkItem.AutoDevItem autoDevItem = null;
-            if ( autoDev != null ) 
+            if (autoDev != null)
                 autoDevItem = autoDev.Items.FirstOrDefault(adi => adi.Alpha == item);
 
             if (autoDev == null || autoDevItem == null)
@@ -442,7 +445,67 @@ namespace SIncLib
                 Console.LogError("Could not find auto dev task for current work item");
                 return;
             }
-            
+
+            bool doneSomething = false;
+
+            /// Do press release
+            if (!autoDevItem.InHouse && (!autoDevItem.PressRelease && autoDev.MarketingTeams.Count > 0) )
+            {
+                MarketingWindow marketingWindow = HUD.Instance.marketingWindow;
+                float           cost            = marketingWindow.PressOptionCost.Sum();
+                float potential =
+                    marketingWindow.PressOptionEffect.Sum();
+                autoDevItem.PressRelease = true;
+                MarketingPlan marketingPlan = new MarketingPlan(autoDevItem.Alpha,
+                                                                MarketingPlan.TaskType.PressRelease, cost,
+                                                                potential,
+                                                                !(autoDevItem.Alpha.guiItem ==
+                                                                  null)
+                                                                    ? autoDevItem.Alpha.guiItem.transform
+                                                                                 .GetSiblingIndex() + 1
+                                                                    : -1);
+                marketingPlan.AutoDev = true;
+                marketingPlan.Hidden  = false;
+                autoDev.AssignTeams(marketingPlan, autoDev.MarketingTeams);
+                GameSettings.Instance.MyCompany.WorkItems.Add(marketingPlan);
+
+                doneSomething = true;
+            }
+
+            /// Do Press builds
+            if (!autoDevItem.InHouse && autoDev.MarketingTeams.Count > 0 )
+            {
+                SoftwareAlpha alpha = item as SoftwareAlpha;
+                GameSettings.Instance.PressBuildQueue.Add(autoDevItem.Alpha);
+                HUD.Instance.AddPopupMessage("PressBuildConfirmation".LocColor((object) item), "Info",
+                                             PopupManager.PopUpAction.None, 0U, PopupManager.NotificationSound.Neutral,
+                                             0.0f, PopupManager.PopupIDs.None, 6);
+                autoDevItem.PressBuild = true;
+
+                doneSomething = true;
+            }
+
+            if (!doneSomething)
+            {
+                HUD.Instance.AddPopupMessage("Can't market product at this time.", "Exclamation",
+                                             PopupManager.PopUpAction.None, 0, PopupManager.NotificationSound.Warning,
+                                             0f);
+            }
+        }
+
+        private static void PromoteSoftware(SoftwareWorkItem item)
+        {
+            AutoDevWorkItem             autoDev     = GetAutoDevWorkItem(item);
+            AutoDevWorkItem.AutoDevItem autoDevItem = null;
+            if (autoDev != null)
+                autoDevItem = autoDev.Items.FirstOrDefault(adi => adi.Alpha == item);
+
+            if (autoDev == null || autoDevItem == null)
+            {
+                Console.LogError("Could not find auto dev task for current work item");
+                return;
+            }
+
             if (item is SoftwareAlpha)
             {
                 SoftwareAlpha alpha = item as SoftwareAlpha;
@@ -450,29 +513,32 @@ namespace SIncLib
                 {
                     autoDevItem.AlreadyDev = autoDevItem.MonthsToSpend;
                 }
+
                 if (!alpha.InDelay)
                 {
                     item.PromoteAction();
-                    if (!alpha.InDelay)
+                    Console.Log("Manually moving out of alpha");
+                    //if (!alpha.InDelay)
                     {
+                        Console.Log("PrintingCopies target = "+autoDev.PrintingCopies);
                         if (autoDev.PrintingCopies > 0U && !autoDevItem.hasPrinted)
                         {
                             uint num = autoDev.PrintingCopies;
                             if (autoDev.PrintingCopyRel)
-                                num = (uint) ((double) item.Followers *
-                                              ((double) autoDev.PrintingCopies / 100.0));
+                                num = (uint) (item.Followers *
+                                              (autoDev.PrintingCopies / 100.0));
+                            Console.Log("PrintingCopies num = "+num);
                             autoDevItem.hasPrinted = true;
                             PrintJob printJob = new PrintJob(alpha.ForceID(), 1f)
-                            {
-                                Limit = new uint?(num)
-                            };
+                                                {
+                                                    Limit = num
+                                                };
                             GameSettings.Instance.PrintOrders[printJob.ID] = printJob;
                             HUD.Instance.distributionWindow.RefreshOrders();
                         }
                     }
                 }
             }
-
         }
 
         private static AutoDevWorkItem GetAutoDevWorkItem(SoftwareWorkItem item)
@@ -481,7 +547,7 @@ namespace SIncLib
             foreach (var workItem in autoDevTasks)
             {
                 var autoDev = (AutoDevWorkItem) workItem;
-                if (autoDev.Items.Any(adi=> adi.Alpha == item))
+                if (autoDev.Items.Any(adi => adi.Alpha == item))
                 {
                     return workItem as AutoDevWorkItem;
                 }
