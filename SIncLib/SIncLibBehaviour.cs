@@ -68,8 +68,7 @@ namespace SIncLib
             if (!SIncLibMod.ModActive && GameSettings.Instance != null && HUD.Instance != null)
             {
                 HUD.Instance.AddPopupMessage("SIncLibUI has been deactivated!", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Neutral, Color.black, 0f,
-                                             PopupManager.PopupIDs.None);
+                                             0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0);
             }
         }
 
@@ -79,8 +78,7 @@ namespace SIncLib
             if (SIncLibMod.ModActive && GameSettings.Instance != null && HUD.Instance != null)
             {
                 HUD.Instance.AddPopupMessage("SIncLibUI has been activated!", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Neutral, Color.black, 0f,
-                                             PopupManager.PopupIDs.None);
+                                             0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0 );
             }
         }
 
@@ -107,21 +105,19 @@ namespace SIncLib
                 int MaxDesign = 0;
                 foreach (SoftwareWorkItem workItem in software)
                 {
-                    Console.Log("Category 2: " + workItem._category);
-                    SoftwareProduct softwareProduct = !workItem.SequelTo.HasValue
-                        ? (SoftwareProduct) null
-                        : GameSettings.Instance.simulation.GetProduct(workItem.SequelTo.Value, false);
+                    Console.Log("Category 2: " + workItem.SWCategory);
+                    SoftwareProduct softwareProduct = workItem.SequelTo;
                     SoftwareProduct sequelTo = softwareProduct == null || !softwareProduct.Traded
                         ? softwareProduct
                         : (SoftwareProduct) null;
 
-                    float devTime = workItem.Type.DevTime(workItem.Features, workItem._category, sequelTo);
+                    float devTime = workItem.Type.DevTime(workItem.GetFeatures(), workItem.SWCategory, null, null, null, false, sequelTo );
                     if (workItem.Type.OSSpecific)
                     {
                         devTime += Mathf.Max(workItem.OSs.Length - 1, 0);
                     }
 
-                    int[] employeeRatio = workItem.Type.GetOptimalEmployeeCount(devTime, workItem.CodeArtRatio);
+                    int[] employeeRatio = SoftwareType.GetOptimalEmployeeCount(devTime);
 
                     if ((AdjustDepartment & AdjustHRFlags.Art) != 0)
                         MaxArt = Mathf.Max(MaxArt, Mathf.CeilToInt(employeeRatio[1] * (1f - workItem.CodeArtRatio)));
@@ -151,15 +147,13 @@ namespace SIncLib
             Dictionary<string, float> specializationMonths = null;
             foreach (SoftwareWorkItem workItem in software)
             {
-                SoftwareProduct softwareProduct = !workItem.SequelTo.HasValue
-                    ? (SoftwareProduct) null
-                    : GameSettings.Instance.simulation.GetProduct(workItem.SequelTo.Value, false);
+                SoftwareProduct softwareProduct = workItem.SequelTo;
                 SoftwareProduct sequelTo = softwareProduct == null || !softwareProduct.Traded
                     ? softwareProduct
                     : (SoftwareProduct) null;
 
 
-                var months = workItem.Type.GetSpecializationMonths(workItem.Features, workItem.Category(),
+                var months = workItem.Type.GetSpecializationMonths(workItem.GetFeatures(), workItem.SWCategory,
                                                                    workItem.OSs, sequelTo);
                 if (specializationMonths == null)
                 {
@@ -216,7 +210,7 @@ namespace SIncLib
                                                                     a.employee != null
                                                                         ? a.employee
                                                                            .GetSpecialization(Employee.EmployeeRole.Programmer,
-                                                                                              specialization.Key, true)
+                                                                                              specialization.Key, a)
                                                                         : (float?) null)
                                              .Take(numCodersRequired));
                 }
@@ -229,7 +223,7 @@ namespace SIncLib
                                                                     a.employee != null
                                                                         ? a.employee
                                                                            .GetSpecialization(Employee.EmployeeRole.Designer,
-                                                                                              specialization.Key, true)
+                                                                                              specialization.Key, a)
                                                                         : (float?) null)
                                              .Take(numDesignersRequired));
                 }
@@ -242,7 +236,7 @@ namespace SIncLib
                                                                     a.employee != null
                                                                         ? a.employee
                                                                            .GetSpecialization(Employee.EmployeeRole.Artist,
-                                                                                              specialization.Key, true)
+                                                                                              specialization.Key, a)
                                                                         : (float?) null)
                                              .Take(numArtistsRequired));
                 }
@@ -355,8 +349,7 @@ namespace SIncLib
             if ( unattachedStaff.Any() )
             {
                 HUD.Instance.AddPopupMessage(unattachedStaff.Count() + " staff are without a team following reassignemnt", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Issue, Color.black, 0f,
-                                             PopupManager.PopupIDs.None);
+                                             0, PopupManager.NotificationSound.Issue, 0f, PopupManager.PopupIDs.None, 0);
             }
 
             error = null;

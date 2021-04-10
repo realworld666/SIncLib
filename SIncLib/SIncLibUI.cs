@@ -142,13 +142,13 @@ namespace SIncLib
                             (state) => { SIncLibBehaviour.Instance.AdjustHR = state; });
 
             Utils.AddButton("Optimise Team", new Rect(210, 180, 250, 32), () => OptimiseTeam());
-            Utils.AddButton("Show Auto Dev", new Rect(210, 220, 250, 32), () => ShowAutoDev());
+            //Utils.AddButton("Show Auto Dev", new Rect(210, 220, 250, 32), () => ShowAutoDev());
         }
 
-        private static void ShowAutoDev()
+        /*private static void ShowAutoDev()
         {
             SIncLibAutoDevUI.ShowWindow();
-        }
+        }*/
 
         private static void OptimiseTeam()
         {
@@ -190,7 +190,7 @@ namespace SIncLib
             else
             {
                 HUD.Instance.AddPopupMessage("Team optimised!", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Neutral, Color.black, 0f,
+                                             0, PopupManager.NotificationSound.Neutral, 0f,
                                              PopupManager.PopupIDs.None);
                 return;
             }
@@ -198,7 +198,7 @@ namespace SIncLib
 
         private static void ShowTeamWindow()
         {
-            HUD.Instance.TeamSelectWindow.Show(true, TeamText.text, SetTeamName);
+            HUD.Instance.TeamSelectWindow.Show(true, TeamText.text, SetTeamName, null);
         }
 
         private static void SetTeamName(string[] t)
