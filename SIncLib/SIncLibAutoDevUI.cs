@@ -425,7 +425,7 @@ namespace SIncLib
             Debug.Assert(item != null);
             var autoDev = GetAutoDevWorkItem(item);
             if ( autoDev == null )
-                return "Error";
+                return "Design";
             if (autoDev.Paused)
                 return "Paused";
             var autoDevItem = autoDev.Items.FirstOrDefault(i=>item == i.Alpha);

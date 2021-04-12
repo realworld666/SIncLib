@@ -143,6 +143,13 @@ namespace SIncLib
 
             Utils.AddButton("Optimise Team", new Rect(210, 180, 250, 32), () => OptimiseTeam());
             //Utils.AddButton("Show Auto Dev", new Rect(210, 220, 250, 32), () => ShowAutoDev());
+            
+            Utils.AddToggle("Get out of stock notifications for acquired software", new Rect(10, 260, 600, 32),
+                            SIncLibBehaviour.Instance.StockNotifications,
+                            (state) =>
+                            {
+                                SIncLibBehaviour.Instance.StockNotifications = state;
+                            });
         }
 
         /*private static void ShowAutoDev()

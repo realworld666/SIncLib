@@ -37,6 +37,7 @@ namespace SIncLib
 
         public bool IdleOnly { get; set; }
         public bool AdjustHR { get; set; }
+        public bool StockNotifications { get; set; }
 
         private void Awake()
         {
@@ -51,6 +52,29 @@ namespace SIncLib
             }
 
             SceneManager.sceneLoaded += OnLevelFinishedLoading;
+        }
+
+        private void Update()
+        {
+            if ( StockNotifications )
+                UpdateStockChecker();
+        }
+
+        private int Month = -1;
+        private void UpdateStockChecker()
+        {
+            if ( Month != TimeOfDay.Instance.Month )
+            {
+                Month = TimeOfDay.Instance.Month;
+                var products = GameSettings.Instance.MyCompany.Products.Where(p=>p.Traded);
+                foreach (var p in products)
+                {
+                    if ( p.MissedPhysicalSales > 0 )
+                    {
+                        HUD.Instance.AddPopupMessage("LostSalesPopup".LocColor((object) p), "Exclamation", PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Warning, 2f, PopupManager.PopupIDs.None, 1);
+                    }
+                }
+            }
         }
 
         private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
