@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,6 +12,12 @@ namespace SIncLib
         public static SIncLibBehaviour Instance;
 
         private int _adjustDepartment = 0;
+        
+        struct GroupCounts
+        {
+            public string Key;
+            public int Count;
+        }
 
         /// <summary>
         /// For some reason unknown to me, the dynamic compiler does not like this when its an enum
@@ -317,33 +324,44 @@ namespace SIncLib
             // Find how many staff we have stolen from each team
             IEnumerable<Actor> newActors = chosenEmployees.Where(e=>e.GetTeam() != team && e.GetTeam() != null);
             Console.Log("newActors = "+newActors.Count());
-            var teamCounts = newActors.GroupBy(e=>e.Team)
-                                            .Select(group=>new
-                                                           {
-                                                               Key   = group.Key,
-                                                               Count = group.Count()
-                                                           }).ToList();
-            Console.Log("teamCounts = "+teamCounts.Count);
-            // Add new team members
-            foreach (Actor employee in chosenEmployees)
+
+
+            try
             {
-                employee.Team = team.Name;
-            }
-            
-            // Which staff are still unattached
-            foreach (var teamCount in teamCounts)
-            {
-                unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
-                Console.Log(string.Format("After reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
+                List<GroupCounts> teamCounts = newActors.GroupBy(e=>e.Team)
+                    .Select(group=>new GroupCounts()
+                    {
+                        Key = group.Key,
+                        Count = group.Count()
+                    }).ToList();
                 
-                Console.Log(string.Format("Team {0} missing {1} staff.", teamCount.Key, teamCount.Count));
-                IEnumerable<Actor> takenStaff = unattachedStaff.Take(Mathf.Min(unattachedStaff.Count(), teamCount.Count));
-                foreach (Actor employee in takenStaff)
+                Console.Log("teamCounts = "+teamCounts.Count);
+                // Add new team members
+                foreach (Actor employee in chosenEmployees)
                 {
-                    employee.Team = teamCount.Key;
+                    employee.Team = team.Name;
+                }
+            
+                // Which staff are still unattached
+                foreach (var teamCount in teamCounts)
+                {
+                    unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
+                    Console.Log(string.Format("After reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
+                
+                    Console.Log(string.Format("Team {0} missing {1} staff.", teamCount.Key, teamCount.Count));
+                    IEnumerable<Actor> takenStaff = unattachedStaff.Take(Mathf.Min(unattachedStaff.Count(), teamCount.Count));
+                    foreach (Actor employee in takenStaff)
+                    {
+                        employee.Team = teamCount.Key;
+                    }
                 }
             }
-            
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+
             unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
             Console.Log(string.Format("After final reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
             if ( unattachedStaff.Any() )
