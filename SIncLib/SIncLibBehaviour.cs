@@ -12,7 +12,7 @@ namespace SIncLib
         public static SIncLibBehaviour Instance;
 
         private int _adjustDepartment = 0;
-        
+
         struct GroupCounts
         {
             public string Key;
@@ -24,8 +24,8 @@ namespace SIncLib
         /// </summary>
         public struct AdjustHRFlags
         {
-            public const int Code   = 1;
-            public const int Art    = 2;
+            public const int Code = 1;
+            public const int Art = 2;
             public const int Design = 4;
         };
 
@@ -52,34 +52,38 @@ namespace SIncLib
             }
 
             SceneManager.sceneLoaded += OnLevelFinishedLoading;
+
+            TimeOfDay.OnDayPassed += TimeOfDayOnOnDayPassed;
         }
 
-        private void Update()
+        private void OnDestroy()
         {
-            if ( StockNotifications )
+            TimeOfDay.OnDayPassed -= TimeOfDayOnOnDayPassed;
+        }
+
+        private void TimeOfDayOnOnDayPassed(object sender, EventArgs e)
+        {
+            if (StockNotifications)
                 UpdateStockChecker();
         }
 
-        private int Month = -1;
         private void UpdateStockChecker()
         {
-            if ( Month != TimeOfDay.Instance.Month )
+            var products = GameSettings.Instance.MyCompany.Products.Where(p => p.Traded);
+            foreach (var p in products)
             {
-                Month = TimeOfDay.Instance.Month;
-                var products = GameSettings.Instance.MyCompany.Products.Where(p=>p.Traded);
-                foreach (var p in products)
+                if (p.MissedPhysicalSales > 0)
                 {
-                    if ( p.MissedPhysicalSales > 0 )
-                    {
-                        HUD.Instance.AddPopupMessage("LostSalesPopup".LocColor((object) p), "Exclamation", PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Warning, 2f, PopupManager.PopupIDs.None, 1);
-                    }
+                    HUD.Instance.AddPopupMessage("LostSalesPopup".LocColor((object) p), "Exclamation",
+                        PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Warning, 2f,
+                        PopupManager.PopupIDs.None, 1);
                 }
             }
         }
 
         private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
         {
-            if (scene == null || scene.name == null  )
+            if (scene == null || scene.name == null)
                 return;
 
             //Other scenes include MainScene and Customization
@@ -99,7 +103,7 @@ namespace SIncLib
             if (!SIncLibMod.ModActive && GameSettings.Instance != null && HUD.Instance != null)
             {
                 HUD.Instance.AddPopupMessage("SIncLibUI has been deactivated!", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0);
+                    0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0);
             }
         }
 
@@ -109,7 +113,7 @@ namespace SIncLib
             if (SIncLibMod.ModActive && GameSettings.Instance != null && HUD.Instance != null)
             {
                 HUD.Instance.AddPopupMessage("SIncLibUI has been activated!", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0 );
+                    0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0);
             }
         }
 
@@ -131,8 +135,8 @@ namespace SIncLib
             // Setup HR so that the correct number of employees are hired, should anyone leave
             if (AdjustDepartment != 0)
             {
-                int MaxArt    = 0;
-                int MaxCode   = 0;
+                int MaxArt = 0;
+                int MaxCode = 0;
                 int MaxDesign = 0;
                 foreach (SoftwareWorkItem workItem in software)
                 {
@@ -142,7 +146,8 @@ namespace SIncLib
                         ? softwareProduct
                         : (SoftwareProduct) null;
 
-                    float devTime = workItem.Type.DevTime(workItem.GetFeatures(), workItem.SWCategory, null, null, null, false, sequelTo );
+                    float devTime = workItem.Type.DevTime(workItem.GetFeatures(), workItem.SWCategory, null, null, null,
+                        false, sequelTo);
                     if (workItem.Type.OSSpecific)
                     {
                         devTime += Mathf.Max(workItem.OSs.Length - 1, 0);
@@ -169,9 +174,9 @@ namespace SIncLib
                 }
 
                 Console.Log(string.Format("Total staff required: C: {0} D: {1} A: {2}",
-                                          team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)],
-                                          team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)],
-                                          team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)]));
+                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)],
+                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)],
+                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)]));
             }
 
             // Switch team members around so that the team has the correct number of staff with the correct skills
@@ -185,7 +190,7 @@ namespace SIncLib
 
 
                 var months = workItem.Type.GetSpecializationMonths(workItem.GetFeatures(), workItem.SWCategory,
-                                                                   workItem.OSs, sequelTo);
+                    workItem.OSs, sequelTo);
                 if (specializationMonths == null)
                 {
                     specializationMonths = months;
@@ -230,46 +235,46 @@ namespace SIncLib
                                     team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)]);
 
                 Console.Log(
-                            string.Format("Num {0} staff required: C: {1} D: {2} A: {3}", specialization.Key,
-                                          numCodersRequired, numDesignersRequired, numArtistsRequired));
+                    string.Format("Num {0} staff required: C: {1} D: {2} A: {3}", specialization.Key,
+                        numCodersRequired, numDesignersRequired, numArtistsRequired));
 
                 // Coders
                 if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
                 {
                     chosenEmployees.AddRange(actors
-                                             .OrderByDescending(a =>
-                                                                    a.employee != null
-                                                                        ? a.employee
-                                                                           .GetSpecialization(Employee.EmployeeRole.Programmer,
-                                                                                              specialization.Key, a)
-                                                                        : (float?) null)
-                                             .Take(numCodersRequired));
+                        .OrderByDescending(a =>
+                            a.employee != null
+                                ? a.employee
+                                    .GetSpecialization(Employee.EmployeeRole.Programmer,
+                                        specialization.Key, a)
+                                : (float?) null)
+                        .Take(numCodersRequired));
                 }
 
                 // Designers
                 if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
                 {
                     chosenEmployees.AddRange(actors
-                                             .OrderByDescending(a =>
-                                                                    a.employee != null
-                                                                        ? a.employee
-                                                                           .GetSpecialization(Employee.EmployeeRole.Designer,
-                                                                                              specialization.Key, a)
-                                                                        : (float?) null)
-                                             .Take(numDesignersRequired));
+                        .OrderByDescending(a =>
+                            a.employee != null
+                                ? a.employee
+                                    .GetSpecialization(Employee.EmployeeRole.Designer,
+                                        specialization.Key, a)
+                                : (float?) null)
+                        .Take(numDesignersRequired));
                 }
 
                 // Artists
                 if ((AdjustDepartment & AdjustHRFlags.Art) != 0)
                 {
                     chosenEmployees.AddRange(actors
-                                             .OrderByDescending(a =>
-                                                                    a.employee != null
-                                                                        ? a.employee
-                                                                           .GetSpecialization(Employee.EmployeeRole.Artist,
-                                                                                              specialization.Key, a)
-                                                                        : (float?) null)
-                                             .Take(numArtistsRequired));
+                        .OrderByDescending(a =>
+                            a.employee != null
+                                ? a.employee
+                                    .GetSpecialization(Employee.EmployeeRole.Artist,
+                                        specialization.Key, a)
+                                : (float?) null)
+                        .Take(numArtistsRequired));
                 }
             }
 
@@ -304,76 +309,78 @@ namespace SIncLib
 
             // Make sure team has enough staff
             var unattachedStaff = GameSettings
-                                  .Instance.sActorManager.Actors.Where(a => a.GetTeam() == null);
+                .Instance.sActorManager.Actors.Where(a => a.GetTeam() == null);
 
             if (chosenEmployees.Count(a => a.employee.IsRole(Employee.EmployeeRole.Programmer)) <
                 team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)])
             {
                 chosenEmployees.AddRange(unattachedStaff.OrderByDescending(a => a.employee != null
-                                                                               ? a.employee.GetSkill(Employee
-                                                                                                     .EmployeeRole
-                                                                                                     .Programmer)
-                                                                               : (float?) null)
-                                                        .Take(team.HR.MaxEmployees
-                                                                  [EmployeeIndex(Employee.EmployeeRole.Programmer)]));
+                        ? a.employee.GetSkill(Employee
+                            .EmployeeRole
+                            .Programmer)
+                        : (float?) null)
+                    .Take(team.HR.MaxEmployees
+                        [EmployeeIndex(Employee.EmployeeRole.Programmer)]));
             }
 
             if (chosenEmployees.Count(a => a.employee.IsRole(Employee.EmployeeRole.Designer)) <
                 team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)])
             {
                 chosenEmployees.AddRange(unattachedStaff.OrderByDescending(a =>
-                                                                               a.employee != null
-                                                                                   ? a.employee.GetSkill(Employee
-                                                                                                         .EmployeeRole
-                                                                                                         .Designer)
-                                                                                   : (float?) null)
-                                                        .Take(team.HR.MaxEmployees
-                                                                  [EmployeeIndex(Employee.EmployeeRole.Designer)]));
+                        a.employee != null
+                            ? a.employee.GetSkill(Employee
+                                .EmployeeRole
+                                .Designer)
+                            : (float?) null)
+                    .Take(team.HR.MaxEmployees
+                        [EmployeeIndex(Employee.EmployeeRole.Designer)]));
             }
 
             if (chosenEmployees.Count(a => a.employee.IsRole(Employee.EmployeeRole.Artist)) <
                 team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)])
             {
                 chosenEmployees.AddRange(unattachedStaff.OrderByDescending(a => a.employee != null
-                                                                               ? a.employee.GetSkill(Employee
-                                                                                                     .EmployeeRole
-                                                                                                     .Artist)
-                                                                               : (float?) null)
-                                                        .Take(team.HR.MaxEmployees
-                                                                  [EmployeeIndex(Employee.EmployeeRole.Artist)]));
+                        ? a.employee.GetSkill(Employee
+                            .EmployeeRole
+                            .Artist)
+                        : (float?) null)
+                    .Take(team.HR.MaxEmployees
+                        [EmployeeIndex(Employee.EmployeeRole.Artist)]));
             }
-            
+
             chosenEmployees = chosenEmployees.Distinct().ToList();
-            
+
             // Find how many staff we have stolen from each team
-            IEnumerable<Actor> newActors = chosenEmployees.Where(e=>e.GetTeam() != team && e.GetTeam() != null);
-            Console.Log("newActors = "+newActors.Count());
+            IEnumerable<Actor> newActors = chosenEmployees.Where(e => e.GetTeam() != team && e.GetTeam() != null);
+            Console.Log("newActors = " + newActors.Count());
 
 
             try
             {
-                List<GroupCounts> teamCounts = newActors.GroupBy(e=>e.Team)
-                    .Select(group=>new GroupCounts()
+                List<GroupCounts> teamCounts = newActors.GroupBy(e => e.Team)
+                    .Select(group => new GroupCounts()
                     {
                         Key = group.Key,
                         Count = group.Count()
                     }).ToList();
-                
-                Console.Log("teamCounts = "+teamCounts.Count);
+
+                Console.Log("teamCounts = " + teamCounts.Count);
                 // Add new team members
                 foreach (Actor employee in chosenEmployees)
                 {
                     employee.Team = team.Name;
                 }
-            
+
                 // Which staff are still unattached
                 foreach (var teamCount in teamCounts)
                 {
-                    unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
-                    Console.Log(string.Format("After reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
-                
+                    unattachedStaff = unattachedStaff.Where(e => e.GetTeam() == null);
+                    Console.Log(string.Format("After reassignment, {0} staff are unassigned.",
+                        unattachedStaff.Count()));
+
                     Console.Log(string.Format("Team {0} missing {1} staff.", teamCount.Key, teamCount.Count));
-                    IEnumerable<Actor> takenStaff = unattachedStaff.Take(Mathf.Min(unattachedStaff.Count(), teamCount.Count));
+                    IEnumerable<Actor> takenStaff =
+                        unattachedStaff.Take(Mathf.Min(unattachedStaff.Count(), teamCount.Count));
                     foreach (Actor employee in takenStaff)
                     {
                         employee.Team = teamCount.Key;
@@ -386,12 +393,14 @@ namespace SIncLib
                 throw;
             }
 
-            unattachedStaff = unattachedStaff.Where(e=>e.GetTeam()==null);
+            unattachedStaff = unattachedStaff.Where(e => e.GetTeam() == null);
             Console.Log(string.Format("After final reassignment, {0} staff are unassigned.", unattachedStaff.Count()));
-            if ( unattachedStaff.Any() )
+            if (unattachedStaff.Any())
             {
-                HUD.Instance.AddPopupMessage(unattachedStaff.Count() + " staff are without a team following reassignemnt", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Issue, 0f, PopupManager.PopupIDs.None, 0);
+                HUD.Instance.AddPopupMessage(
+                    unattachedStaff.Count() + " staff are without a team following reassignemnt", "Cogs",
+                    PopupManager.PopUpAction.None,
+                    0, PopupManager.NotificationSound.Issue, 0f, PopupManager.PopupIDs.None, 0);
             }
 
             error = null;

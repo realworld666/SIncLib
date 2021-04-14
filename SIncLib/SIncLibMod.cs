@@ -4,7 +4,7 @@ namespace SIncLib
 {
     public class SIncLibMod : ModMeta
     {
-        public static string Version = "0.5";
+        public static string Version = "0.6";
         public static bool ModActive { get; set; }
         
         public override void ConstructOptionsScreen(RectTransform parent, bool inGame)
