@@ -150,6 +150,8 @@ namespace SIncLib
                             {
                                 SIncLibBehaviour.Instance.StockNotifications = state;
                             });
+            
+            Utils.AddButton("Market Research", new Rect(10, 300, 250, 32), () => SIncLibMarketResearchUI.ShowWindow());
         }
 
         /*private static void ShowAutoDev()
