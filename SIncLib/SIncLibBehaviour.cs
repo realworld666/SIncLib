@@ -146,7 +146,7 @@ namespace SIncLib
                         ? softwareProduct
                         : (SoftwareProduct) null;
 
-                    float devTime = workItem.Type.DevTime(workItem.GetFeatures(), workItem.SWCategory, null, null, null,
+                    float devTime = workItem.Type.DevTime(workItem.GetFeatures(), workItem.SWCategory, null, null, null, null,
                         false, sequelTo);
                     if (workItem.Type.OSSpecific)
                     {
