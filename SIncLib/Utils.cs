@@ -16,7 +16,7 @@ namespace SIncLib
             Buttons.Add(x.gameObject);
             return x;
         }
-        
+
         public static Button AddButton(string Text, Rect Button, UnityAction Action)
         {
             Button x = WindowManager.SpawnButton();
@@ -34,11 +34,20 @@ namespace SIncLib
             WindowManager.AddElementToWindow(x.gameObject, SIncLibUI.Window, InputBox, new Rect(0, 0, 0, 0));
         }
 
+        public static void AddIntField(int Value, Rect InputBox, UnityAction<int> Action)
+        {
+            InputField x = WindowManager.SpawnInputbox();
+            x.text = Value.ToString();
+            x.contentType = InputField.ContentType.IntegerNumber;
+            x.onValueChanged.AddListener(value => Action.Invoke(int.Parse(value)));
+            WindowManager.AddElementToWindow(x.gameObject, SIncLibUI.Window, InputBox, new Rect(0, 0, 0, 0));
+        }
+
         public static void AddLabel(string Text, Rect Label, GUIWindow window = null)
         {
-            if ( window == null )
+            if (window == null)
                 window = SIncLibUI.Window;
-            
+
             Text x = WindowManager.SpawnLabel();
             x.text = Text;
             WindowManager.AddElementToWindow(x.gameObject, window, Label, new Rect(0, 0, 0, 0));

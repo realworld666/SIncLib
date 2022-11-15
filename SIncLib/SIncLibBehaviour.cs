@@ -38,10 +38,16 @@ namespace SIncLib
         public bool IdleOnly { get; set; }
         public bool AdjustHR { get; set; }
         public bool StockNotifications { get; set; }
+        public float ManageStock { get; internal set; }
+        public bool ManageStockNotifications { get; internal set; }
 
         private void Awake()
         {
             Instance = this;
+
+            StockNotifications = PlayerPrefs.GetInt("SIncLib_StockNotifications", 0) == 1 ? true : false;
+            ManageStock = PlayerPrefs.GetFloat("SIncLib_ManageStock", 0);
+            ManageStockNotifications = PlayerPrefs.GetInt("SIncLib_ManageStockNotifications", 1) == 1 ? true : false;
         }
 
         private void Start()
@@ -65,6 +71,8 @@ namespace SIncLib
         {
             if (StockNotifications)
                 UpdateStockChecker();
+            if (ManageStock > 0)
+                UpdateInventory();
         }
 
         private void UpdateStockChecker()
@@ -74,9 +82,75 @@ namespace SIncLib
             {
                 if (p.MissedPhysicalSales > 0)
                 {
-                    HUD.Instance.AddPopupMessage("LostSalesPopup".LocColor((object) p), "Exclamation",
-                        PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Warning, 2f,
-                        PopupManager.PopupIDs.None, 1);
+                    NotificationManager.AddNotification((NotificationMessage)new NoStockNotification(p));
+                }
+            }
+        }
+
+        private void UpdateInventory()
+        {
+            var products = GameSettings.Instance.MyCompany.Products;
+            // for every product this company owns
+            foreach (var p in products)
+            {
+                if (p.PhysicalCopies < (p.GetLastPhysicalSales() * ManageStock))
+                {
+                    long stockToBuy = Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageStock) - p.PhysicalCopies;
+
+
+
+                    // Do we have printers?
+                    if (GameSettings.Instance.ProductPrinters.Count > 0)
+                    {
+                        string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Printing {3}",
+                        p.Name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
+
+                        if (ManageStockNotifications)
+                        {
+                            HUD.Instance.AddPopupMessage(msg, "Info",
+                            PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Neutral, 1f,
+                            PopupManager.PopupIDs.None, 1);
+                        }
+                        else
+                        {
+                            Console.Log(msg);
+                        }
+
+                        PrintJob printJob = (PrintJob)null;
+
+                        printJob = new PrintJob(p);
+                        printJob.Limit = (uint?)stockToBuy;
+                        GameSettings.Instance.AddPrintOrder(printJob, false);
+                    }
+                    else
+                    {
+                        string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Buying {3}",
+                        p.Name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
+
+                        if (ManageStockNotifications)
+                        {
+                            HUD.Instance.AddPopupMessage(msg, "Info",
+                                PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Neutral, 1f,
+                                PopupManager.PopupIDs.None, 1);
+                        }
+                        else
+                        {
+                            Console.Log(msg);
+                        }
+
+                        float num = (float)stockToBuy * p.GetPrintPrice();
+                        if (GameSettings.Instance.MyCompany.CanMakeTransaction(-num))
+                        {
+                            GameSettings.Instance.MyCompany.MakeTransaction(-num, Company.TransactionCategory.Distribution, "Copy order");
+
+                            p.PhysicalCopies += (uint)stockToBuy;
+                            p.AddLoss((float)stockToBuy * p.GetPrintPrice(), SoftwareProduct.LossType.Copies, true);
+                        }
+                        else
+                            HUD.Instance.AddPopupMessage("CannotAfford".Loc(), "Warning",
+                                PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Warning, 2f,
+                                PopupManager.PopupIDs.None, 1);
+                    }
                 }
             }
         }
@@ -119,7 +193,7 @@ namespace SIncLib
 
         private int EmployeeIndex(Employee.EmployeeRole role)
         {
-            return (int) role - 1;
+            return (int)role - 1;
         }
 
         public bool TransferBestAvailableStaff(Team team, Team[] sourceTeams, out string error)
@@ -140,15 +214,15 @@ namespace SIncLib
                 int MaxDesign = 0;
                 foreach (SoftwareWorkItem workItem in software)
                 {
-                    Console.Log("Category 2: " + workItem.SWCategory);
+                    Console.Log("Category: " + workItem.SWCategory);
                     SoftwareProduct softwareProduct = workItem.SequelTo;
                     SoftwareProduct sequelTo = softwareProduct == null || !softwareProduct.Traded
                         ? softwareProduct
-                        : (SoftwareProduct) null;
+                        : (SoftwareProduct)null;
 
                     float devTime = workItem.Type.DevTime(workItem.GetFeatures(), workItem.SWCategory, null, null, null, null,
                         false, sequelTo);
-                    if (workItem.Type.OSSpecific)
+                    if (workItem.Type.OSSpecific && workItem.OSs != null)
                     {
                         devTime += Mathf.Max(workItem.OSs.Length - 1, 0);
                     }
@@ -161,6 +235,7 @@ namespace SIncLib
                         MaxCode = Mathf.Max(MaxCode, Mathf.CeilToInt(employeeRatio[1] * workItem.CodeArtRatio));
                     if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
                         MaxDesign = Mathf.Max(MaxDesign, employeeRatio[0]);
+
                 }
 
                 if (AdjustHR)
@@ -180,30 +255,40 @@ namespace SIncLib
             }
 
             // Switch team members around so that the team has the correct number of staff with the correct skills
-            Dictionary<string, float> specializationMonths = null;
+            Dictionary<string, float[]> specializationMonths = null;
             foreach (SoftwareWorkItem workItem in software)
             {
                 SoftwareProduct softwareProduct = workItem.SequelTo;
                 SoftwareProduct sequelTo = softwareProduct == null || !softwareProduct.Traded
                     ? softwareProduct
-                    : (SoftwareProduct) null;
+                    : (SoftwareProduct)null;
 
 
-                var months = workItem.Type.GetSpecializationMonths(workItem.GetFeatures(), workItem.SWCategory,
-                    workItem.OSs, sequelTo);
+                var monthsCodeArt = workItem.Type.GetSpecializationMonthsCodeArt(workItem.GetFeatures(), workItem.SWCategory, GameSettings.Instance.MyCompany,
+                    workItem.TechLevels, workItem.OSs, workItem.Framework, false, sequelTo);
+                Console.Log("----");
+                foreach (KeyValuePair<string, float[]> keyValuePair in monthsCodeArt)
+                {
+                    Console.Log(string.Format("monthsCodeAr: {0} {1}", keyValuePair.Key, String.Join(",", keyValuePair.Value.Select(v => v.ToString()).ToArray())));
+                }
                 if (specializationMonths == null)
                 {
-                    specializationMonths = months;
+                    specializationMonths = monthsCodeArt;
                 }
                 else
                 {
                     // Merge dictionaries
-                    foreach (KeyValuePair<string, float> valuePair in months)
+                    foreach (KeyValuePair<string, float[]> valuePair in monthsCodeArt)
                     {
                         if (specializationMonths.ContainsKey(valuePair.Key))
                         {
-                            specializationMonths[valuePair.Key] =
-                                Mathf.Max(specializationMonths[valuePair.Key], valuePair.Value);
+                            // code time
+                            specializationMonths[valuePair.Key][0] =
+                                Mathf.Max(specializationMonths[valuePair.Key][0], valuePair.Value[0]);
+
+                            // art time
+                            specializationMonths[valuePair.Key][1] =
+                                Mathf.Max(specializationMonths[valuePair.Key][1], valuePair.Value[1]);
                         }
                         else
                         {
@@ -213,7 +298,9 @@ namespace SIncLib
                 }
             }
 
-            float totalMonths = specializationMonths.Sum(s => s.Value);
+            float[] totalMonths = new float[2];
+            totalMonths[0] = specializationMonths.SumSafe(s => s.Value[0]);
+            totalMonths[1] = specializationMonths.SumSafe(s => s.Value[1]);
 
             List<Actor> chosenEmployees = new List<Actor>();
             IEnumerable<Actor> actors =
@@ -222,17 +309,17 @@ namespace SIncLib
                                                                        a.GetTeam() == team || a.GetTeam() == null));
 
             Console.Log("Available employees : " + actors.Count());
-            foreach (KeyValuePair<string, float> specialization in specializationMonths)
+            foreach (KeyValuePair<string, float[]> specialization in specializationMonths)
             {
                 int numCodersRequired =
-                    Mathf.CeilToInt((specialization.Value / totalMonths) *
+                    Mathf.CeilToInt((specialization.Value[0] / totalMonths[0]) *
                                     team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)]);
                 int numDesignersRequired =
-                    Mathf.CeilToInt((specialization.Value / totalMonths) *
+                    Mathf.CeilToInt((specialization.Value[0] / totalMonths[0]) *
                                     team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)]);
-                int numArtistsRequired =
-                    Mathf.CeilToInt((specialization.Value / totalMonths) *
-                                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)]);
+                int numArtistsRequired = totalMonths[1] > 0 ?
+                    Mathf.CeilToInt((specialization.Value[1] / totalMonths[1]) *
+                                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)]) : 0;
 
                 Console.Log(
                     string.Format("Num {0} staff required: C: {1} D: {2} A: {3}", specialization.Key,
@@ -247,7 +334,7 @@ namespace SIncLib
                                 ? a.employee
                                     .GetSpecialization(Employee.EmployeeRole.Programmer,
                                         specialization.Key, a)
-                                : (float?) null)
+                                : (float?)null)
                         .Take(numCodersRequired));
                 }
 
@@ -260,7 +347,7 @@ namespace SIncLib
                                 ? a.employee
                                     .GetSpecialization(Employee.EmployeeRole.Designer,
                                         specialization.Key, a)
-                                : (float?) null)
+                                : (float?)null)
                         .Take(numDesignersRequired));
                 }
 
@@ -273,7 +360,7 @@ namespace SIncLib
                                 ? a.employee
                                     .GetSpecialization(Employee.EmployeeRole.Artist,
                                         specialization.Key, a)
-                                : (float?) null)
+                                : (float?)null)
                         .Take(numArtistsRequired));
                 }
             }
@@ -318,7 +405,7 @@ namespace SIncLib
                         ? a.employee.GetSkill(Employee
                             .EmployeeRole
                             .Programmer)
-                        : (float?) null)
+                        : (float?)null)
                     .Take(team.HR.MaxEmployees
                         [EmployeeIndex(Employee.EmployeeRole.Programmer)]));
             }
@@ -331,7 +418,7 @@ namespace SIncLib
                             ? a.employee.GetSkill(Employee
                                 .EmployeeRole
                                 .Designer)
-                            : (float?) null)
+                            : (float?)null)
                     .Take(team.HR.MaxEmployees
                         [EmployeeIndex(Employee.EmployeeRole.Designer)]));
             }
@@ -343,7 +430,7 @@ namespace SIncLib
                         ? a.employee.GetSkill(Employee
                             .EmployeeRole
                             .Artist)
-                        : (float?) null)
+                        : (float?)null)
                     .Take(team.HR.MaxEmployees
                         [EmployeeIndex(Employee.EmployeeRole.Artist)]));
             }
@@ -402,6 +489,7 @@ namespace SIncLib
                     PopupManager.PopUpAction.None,
                     0, PopupManager.NotificationSound.Issue, 0f, PopupManager.PopupIDs.None, 0);
             }
+
 
             error = null;
             return true;

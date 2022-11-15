@@ -4,7 +4,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Console = DevConsole.Console;
 
 namespace SIncLib
 {
@@ -17,7 +16,7 @@ namespace SIncLib
 
         public static void SpawnButton()
         {
-            btn                                     = WindowManager.SpawnButton();
+            btn = WindowManager.SpawnButton();
             btn.GetComponentInChildren<Text>().text = "SIncLib";
             btn.onClick.AddListener(Show);
             btn.name = "SIncLibButton";
@@ -45,12 +44,12 @@ namespace SIncLib
             }
         }
 
-        public static  GUIWindow       Window;
-        private static string          title    = "SIncLib by Otters Pocket - v" + SIncLibMod.Version;
-        public static  bool            shown    = false;
+        public static GUIWindow Window;
+        private static string title = "SIncLib by Otters Pocket - v" + SIncLibMod.Version;
+        public static bool shown = false;
         private static HashSet<string> DevTeams = new HashSet<string>();
-        private static Text            TeamText;
-        private static Text            SourceText;
+        private static Text TeamText;
+        private static Text SourceText;
 
         public static void Show()
         {
@@ -68,13 +67,13 @@ namespace SIncLib
         private static void Init()
         {
             DevTeams.Clear();
-            DevTeams.AddRange<string>((IEnumerable<string>) GameSettings.Instance.GetDefaultTeams("Design"));
+            DevTeams.AddRange<string>((IEnumerable<string>)GameSettings.Instance.GetDefaultTeams("Design"));
 
-            Window                = WindowManager.SpawnWindow();
-            Window.InitialTitle   = Window.TitleText.text = Window.NonLocTitle = title;
-            Window.MinSize.x      = 670;
-            Window.MinSize.y      = 400;
-            Window.name           = "SIncLibOptions";
+            Window = WindowManager.SpawnWindow();
+            Window.InitialTitle = Window.TitleText.text = Window.NonLocTitle = title;
+            Window.MinSize.x = 670;
+            Window.MinSize.y = 400;
+            Window.name = "SIncLibOptions";
             Window.MainPanel.name = "SIncLibOptionsPanel";
 
             if (Window.name == "SIncLibOptions")
@@ -143,15 +142,34 @@ namespace SIncLib
 
             Utils.AddButton("Optimise Team", new Rect(210, 180, 250, 32), () => OptimiseTeam());
             //Utils.AddButton("Show Auto Dev", new Rect(210, 220, 250, 32), () => ShowAutoDev());
-            
+
             Utils.AddToggle("Get out of stock notifications for acquired software", new Rect(10, 260, 600, 32),
                             SIncLibBehaviour.Instance.StockNotifications,
                             (state) =>
                             {
                                 SIncLibBehaviour.Instance.StockNotifications = state;
+                                PlayerPrefs.SetInt("SIncLib_StockNotifications", state ? 1 : 0);
+                                PlayerPrefs.Save();
                             });
-            
-            Utils.AddButton("Market Research", new Rect(10, 300, 250, 32), () => SIncLibMarketResearchUI.ShowWindow());
+
+            Utils.AddLabel("Keep stock levels at % of last months sales", new Rect(10, 290, 600, 32));
+            Utils.AddIntField(Mathf.CeilToInt(SIncLibBehaviour.Instance.ManageStock * 100), new Rect(300, 280, 50, 32),
+                            (value) =>
+                            {
+                                SIncLibBehaviour.Instance.ManageStock = (float)value / 100f;
+                                PlayerPrefs.SetFloat("SIncLib_ManageStock", SIncLibBehaviour.Instance.ManageStock);
+                                PlayerPrefs.Save();
+                            });
+            Utils.AddToggle("Notifications?", new Rect(370, 290, 600, 32),
+                           SIncLibBehaviour.Instance.ManageStockNotifications,
+                           (state) =>
+                           {
+                               SIncLibBehaviour.Instance.ManageStockNotifications = state;
+                               PlayerPrefs.SetInt("SIncLib_ManageStockNotifications", state ? 1 : 0);
+                               PlayerPrefs.Save();
+                           });
+
+            //Utils.AddButton("Market Research", new Rect(10, 300, 250, 32), () => SIncLibMarketResearchUI.ShowWindow());
         }
 
         /*private static void ShowAutoDev()
@@ -183,7 +201,7 @@ namespace SIncLib
                 return;
             }
 
-            var    team  = GameSettings.Instance.sActorManager.Teams[TeamText.text];
+            var team = GameSettings.Instance.sActorManager.Teams[TeamText.text];
             string error = "";
             if (!SIncLibBehaviour.Instance.TransferBestAvailableStaff(team,
                                                                       DevTeams.Select(t => GameSettings
@@ -217,21 +235,21 @@ namespace SIncLib
 
         private static void ShowMultiTeamWindow()
         {
-            HUD.Instance.TeamSelectWindow.Show(false, DevTeams, (Action<string[]>) (t =>
+            HUD.Instance.TeamSelectWindow.Show(false, DevTeams, (Action<string[]>)(t =>
             {
                 DevTeams.Clear();
-                DevTeams.AddRange<string>((IList<string>) t);
+                DevTeams.AddRange<string>((IList<string>)t);
                 UpdateTeamText();
-            }), (string) null);
+            }), (string)null);
         }
 
         public static void UpdateTeamText()
         {
             DevTeams = DevTeams
-                       .Where<string>((Func<string, bool>) (x =>
+                       .Where<string>((Func<string, bool>)(x =>
                                           GameSettings.Instance.sActorManager.Teams.ContainsKey(x)))
                        .ToHashSet<string>();
-            SourceText.text = DevTeams.GetListAbbrev<string>("Team", (Func<string, string>) null);
+            SourceText.text = DevTeams.GetListAbbrev<string>("Team", (Func<string, string>)null);
         }
     }
 }
