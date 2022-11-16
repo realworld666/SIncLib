@@ -90,78 +90,100 @@ namespace SIncLib
         private void UpdateInventory()
         {
             var products = GameSettings.Instance.MyCompany.Products;
+            var addOns = GameSettings.Instance.MyCompany.AddOns;
             // for every product this company owns
             foreach (var p in products)
             {
-                if (p.PhysicalCopies < (p.GetLastPhysicalSales() * ManageStock))
+                this.UpdateInventoryForStockableItem(p, p.Name, p.ID);
+            }
+            // for every add on
+            foreach (var p in addOns)
+            {
+                this.UpdateInventoryForStockableItem(p, p.Name, null);
+            }
+        }
+
+        private void UpdateInventoryForStockableItem(IStockable p, string name, uint? id)
+        {
+            if (p.PhysicalCopies < (p.GetLastPhysicalSales() * ManageStock))
+            {
+                long stockToBuy = Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageStock) - p.PhysicalCopies;
+
+
+
+                // Do we have printers?
+                if (GameSettings.Instance.ProductPrinters.Count > 0)
                 {
-                    long stockToBuy = Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageStock) - p.PhysicalCopies;
+                    string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Printing {3}",
+                    name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
 
-
-
-                    // Do we have printers?
-                    if (GameSettings.Instance.ProductPrinters.Count > 0)
+                    if (ManageStockNotifications && id.HasValue)
                     {
-                        string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Printing {3}",
-                        p.Name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
-
-                        if (ManageStockNotifications)
-                        {
-                            HUD.Instance.AddPopupMessage(msg, "Info",
-                            PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Neutral, 1f,
-                            PopupManager.PopupIDs.None, 1);
-                        }
-                        else
-                        {
-                            Console.Log(msg);
-                        }
-
-                        PrintJob printJob = GameSettings.Instance.GetPrintJob(p);
-                        if (printJob == null)
-                        {
-                            printJob = new PrintJob(p);
-                            printJob.Limit = (uint?)stockToBuy;
-
-                            GameSettings.Instance.AddPrintOrder(printJob, false);
-                        }
-                        else
-                        {
-                            Console.Log(string.Format("Print job for {0} already exists. Has value: {1}", p.Name, printJob.Limit.HasValue ? printJob.Limit.Value.ToString() : "false"));
-                            if (printJob.Limit.HasValue)
-                            {
-                                Console.Log(string.Format("Updating print job for {0} to {1}", p.Name, stockToBuy));
-                                printJob.Limit = (uint)Math.Max(printJob.Limit.Value, stockToBuy);
-                            }
-                        }
+                        HUD.Instance.AddPopupMessage(msg, "Info",
+                        PopupManager.PopUpAction.OpenProductDetails, id.Value, PopupManager.NotificationSound.Neutral, 1f,
+                        PopupManager.PopupIDs.None, 1);
                     }
                     else
                     {
-                        string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Buying {3}",
-                        p.Name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
+                        Console.Log(msg);
+                    }
 
-                        if (ManageStockNotifications)
-                        {
-                            HUD.Instance.AddPopupMessage(msg, "Info",
-                                PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Neutral, 1f,
-                                PopupManager.PopupIDs.None, 1);
-                        }
-                        else
-                        {
-                            Console.Log(msg);
-                        }
+                    PrintJob printJob = GameSettings.Instance.GetPrintJob(p);
+                    if (printJob == null)
+                    {
+                        printJob = new PrintJob(p);
+                        printJob.Limit = (uint?)stockToBuy;
 
-                        float num = (float)stockToBuy * p.GetPrintPrice();
-                        if (GameSettings.Instance.MyCompany.CanMakeTransaction(-num))
+                        GameSettings.Instance.AddPrintOrder(printJob, false);
+                    }
+                    else
+                    {
+                        Console.Log(string.Format("Print job for {0} already exists. Has value: {1}", name, printJob.Limit.HasValue ? printJob.Limit.Value.ToString() : "false"));
+                        if (printJob.Limit.HasValue)
                         {
-                            GameSettings.Instance.MyCompany.MakeTransaction(-num, Company.TransactionCategory.Distribution, "Copy order");
-
-                            p.PhysicalCopies += (uint)stockToBuy;
-                            p.AddLoss((float)stockToBuy * p.GetPrintPrice(), SoftwareProduct.LossType.Copies, true);
+                            Console.Log(string.Format("Updating print job for {0} to {1}", name, stockToBuy));
+                            printJob.Limit = (uint)Math.Max(printJob.Limit.Value, stockToBuy);
                         }
-                        else
+                    }
+                }
+                else
+                {
+                    string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Buying {3}",
+                    name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
+
+                    if (ManageStockNotifications && id.HasValue)
+                    {
+                        HUD.Instance.AddPopupMessage(msg, "Info",
+                            PopupManager.PopUpAction.OpenProductDetails, id.Value, PopupManager.NotificationSound.Neutral, 1f,
+                            PopupManager.PopupIDs.None, 1);
+                    }
+                    else
+                    {
+                        Console.Log(msg);
+                    }
+
+                    float num = (float)stockToBuy * p.GetPrintPrice();
+                    if (GameSettings.Instance.MyCompany.CanMakeTransaction(-num))
+                    {
+                        GameSettings.Instance.MyCompany.MakeTransaction(-num, Company.TransactionCategory.Distribution, "Copy order");
+
+                        p.PhysicalCopies += (uint)stockToBuy;
+                        p.AddLoss((float)stockToBuy * p.GetPrintPrice(), SoftwareProduct.LossType.Copies, true);
+                    }
+                    else
+                    {
+                        if (id.HasValue)
+                        {
                             HUD.Instance.AddPopupMessage("CannotAfford".Loc(), "Warning",
-                                PopupManager.PopUpAction.OpenProductDetails, p.ID, PopupManager.NotificationSound.Warning, 2f,
+                         PopupManager.PopUpAction.OpenProductDetails, id.Value, PopupManager.NotificationSound.Warning, 2f,
+                         PopupManager.PopupIDs.None, 1);
+                        }
+                        else
+                        {
+                            HUD.Instance.AddPopupMessage("CannotAfford".Loc(), "Warning",
+                                PopupManager.PopUpAction.None, 0, PopupManager.NotificationSound.Warning, 2f,
                                 PopupManager.PopupIDs.None, 1);
+                        }
                     }
                 }
             }
