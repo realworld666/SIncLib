@@ -116,23 +116,11 @@ namespace SIncLib
                             Console.Log(msg);
                         }
 
-                        PrintJob printJob = GameSettings.Instance.GetPrintJob(p);
-                        if (printJob == null)
-                        {
-                            printJob = new PrintJob(p);
-                            printJob.Limit = (uint?)stockToBuy;
+                        PrintJob printJob = (PrintJob)null;
 
-                            GameSettings.Instance.AddPrintOrder(printJob, false);
-                        }
-                        else
-                        {
-                            Console.Log(string.Format("Print job for {0} already exists. Has value: {1}", p.Name, printJob.Limit.HasValue ? printJob.Limit.Value.ToString() : "false"));
-                            if (printJob.Limit.HasValue)
-                            {
-                                Console.Log(string.Format("Updating print job for {0} to {1}", p.Name, stockToBuy));
-                                printJob.Limit = (uint)Math.Max(printJob.Limit.Value, stockToBuy);
-                            }
-                        }
+                        printJob = new PrintJob(p);
+                        printJob.Limit = (uint?)stockToBuy;
+                        GameSettings.Instance.AddPrintOrder(printJob, false);
                     }
                     else
                     {
