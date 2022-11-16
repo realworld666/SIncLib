@@ -645,3 +645,8 @@ crashlytics-build.properties
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,csharp,unity
+/SIncLib/meta.tyd
+/SIncLib/SIncLib.dcache
+/SIncLib/SIncLibH.bin
+/SIncLib/thumbnail.png
+/SIncLib/TypeInfo.txt
