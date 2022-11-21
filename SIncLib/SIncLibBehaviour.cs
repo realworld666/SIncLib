@@ -13,6 +13,7 @@ namespace SIncLib
 
         private int _adjustDepartment = 0;
 
+        private List<AddonSaleItem> addonSales;
         struct GroupCounts
         {
             public string Key;
@@ -44,6 +45,7 @@ namespace SIncLib
         private void Awake()
         {
             Instance = this;
+            addonSales = new List<AddonSaleItem>();
 
             StockNotifications = PlayerPrefs.GetInt("SIncLib_StockNotifications", 0) == 1 ? true : false;
             ManageStock = PlayerPrefs.GetFloat("SIncLib_ManageStock", 0);
@@ -73,6 +75,33 @@ namespace SIncLib
                 UpdateStockChecker();
             if (ManageStock > 0)
                 UpdateInventory();
+            UpdateAddonSales();
+        }
+
+        private void UpdateAddonSales()
+        {
+            foreach (var addon in GameSettings.Instance.MyCompany.AddOns)
+            {
+                var addonSalesList = addonSales.FirstOrDefault(a => a.product == addon);
+                if (addonSalesList == null)
+                {
+                    addonSalesList = new AddonSaleItem() { product = addon, sales = new List<AddonSale>() };
+                    addonSales.Add(addonSalesList);
+                }
+                if (addonSalesList.sales.Count >= 3)
+                {
+                    if (addonSalesList.sales.Last().Cumulative == addon.Sales)
+                        continue;
+                }
+                var sale = new AddonSale
+                {
+                    Date = TimeOfDay.Instance.GetDate(),
+                    //Digital = salesObject.DigitalSales,
+                    //Physical = salesObject.PhysicalSales,
+                    Cumulative = addon.Sales
+                };
+                addonSalesList.sales.Add(sale);
+            }
         }
 
         private void UpdateStockChecker()
@@ -528,5 +557,6 @@ namespace SIncLib
             error = null;
             return true;
         }
+
     }
 }

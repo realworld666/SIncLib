@@ -169,6 +169,8 @@ namespace SIncLib
                                PlayerPrefs.Save();
                            });
 
+            Utils.AddButton("Addon Sales History", new Rect(10, 340, 250, 32), () => SIncLibAddon.ShowWindow());
+
             //Utils.AddButton("Market Research", new Rect(10, 300, 250, 32), () => SIncLibMarketResearchUI.ShowWindow());
         }
 
