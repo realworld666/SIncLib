@@ -53,8 +53,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AddonSale.cs" />
-    <Compile Include="SIncLibAddon.cs" />
     <Compile Include="SIncLibAutoDevUI.cs" />
     <Compile Include="SIncLibBehaviour.cs" />
     <Compile Include="SIncLibMarketResearchUI.cs" />

@@ -11,30 +11,14 @@ namespace SIncLib
     {
         public static SIncLibBehaviour Instance;
 
-        private int _adjustDepartment = 0;
 
-        private List<AddonSaleItem> addonSales;
-        struct GroupCounts
+
+        public SIncLibBehaviour()
         {
-            public string Key;
-            public int Count;
+            AdjustDepartment = 0;
         }
 
-        /// <summary>
-        /// For some reason unknown to me, the dynamic compiler does not like this when its an enum
-        /// </summary>
-        public struct AdjustHRFlags
-        {
-            public const int Code = 1;
-            public const int Art = 2;
-            public const int Design = 4;
-        };
-
-        public int AdjustDepartment
-        {
-            get { return _adjustDepartment; }
-            set { _adjustDepartment = value; }
-        }
+        public int AdjustDepartment { get; set; }
 
         public bool IdleOnly { get; set; }
         public bool AdjustHR { get; set; }
@@ -45,7 +29,6 @@ namespace SIncLib
         private void Awake()
         {
             Instance = this;
-            addonSales = new List<AddonSaleItem>();
 
             StockNotifications = PlayerPrefs.GetInt("SIncLib_StockNotifications", 0) == 1 ? true : false;
             ManageStock = PlayerPrefs.GetFloat("SIncLib_ManageStock", 0);
@@ -64,6 +47,44 @@ namespace SIncLib
             TimeOfDay.OnDayPassed += TimeOfDayOnOnDayPassed;
         }
 
+        private void Update()
+        {
+            if (GameSettings.Instance == null || GameSettings.Instance.sActorManager == null ||
+                GameSettings.Instance.sActorManager.Teams == null)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<string, Team> team in GameSettings.Instance.sActorManager.Teams.Where(team =>
+                         team.Value != null
+                         && SIncLibUI.SerialTeams.Contains(team.Value.Name) && team.Value.WorkItems != null))
+            {
+                //Console.Log("Team " + team.Key + " tasks " + team.Value.WorkItems.Count);
+                bool foundActiveTask = false;
+                for (int i = 0; i < team.Value.WorkItems.Count; i++)
+                {
+                    float progress = team.Value.WorkItems[i].GetProgress();
+                    //Console.Log("Team " + team.Key + " task " + team.Value.WorkItems[i].Name + " progress " + progress);
+                    if (!foundActiveTask)
+                    {
+                        if (progress < 1f)
+                        {
+                            if (team.Value.WorkItems[i].Paused)
+                            {
+                                team.Value.WorkItems[i].Paused = false;
+                            }
+
+                            foundActiveTask = true;
+                        }
+                    }
+                    else if (!team.Value.WorkItems[i].Paused)
+                    {
+                        team.Value.WorkItems[i].Paused = true;
+                    }
+                }
+            }
+        }
+
         private void OnDestroy()
         {
             TimeOfDay.OnDayPassed -= TimeOfDayOnOnDayPassed;
@@ -72,85 +93,71 @@ namespace SIncLib
         private void TimeOfDayOnOnDayPassed(object sender, EventArgs e)
         {
             if (StockNotifications)
+            {
                 UpdateStockChecker();
+            }
+
             if (ManageStock > 0)
+            {
                 UpdateInventory();
-            UpdateAddonSales();
+            }
+
         }
 
-        private void UpdateAddonSales()
-        {
-            foreach (var addon in GameSettings.Instance.MyCompany.AddOns)
-            {
-                var addonSalesList = addonSales.FirstOrDefault(a => a.product == addon);
-                if (addonSalesList == null)
-                {
-                    addonSalesList = new AddonSaleItem() { product = addon, sales = new List<AddonSale>() };
-                    addonSales.Add(addonSalesList);
-                }
-                if (addonSalesList.sales.Count >= 3)
-                {
-                    if (addonSalesList.sales.Last().Cumulative == addon.Sales)
-                        continue;
-                }
-                var sale = new AddonSale
-                {
-                    Date = TimeOfDay.Instance.GetDate(),
-                    //Digital = salesObject.DigitalSales,
-                    //Physical = salesObject.PhysicalSales,
-                    Cumulative = addon.Sales
-                };
-                addonSalesList.sales.Add(sale);
-            }
-        }
 
         private void UpdateStockChecker()
         {
-            var products = GameSettings.Instance.MyCompany.Products.Where(p => p.Traded);
-            foreach (var p in products)
+            IEnumerable<SoftwareProduct> products = GameSettings.Instance.MyCompany.Products.Where(p => p.Traded);
+            foreach (SoftwareProduct p in products)
             {
                 if (p.MissedPhysicalSales > 0)
                 {
-                    NotificationManager.AddNotification((NotificationMessage)new NoStockNotification(p));
+                    NotificationManager.AddNotification(new NoStockNotification(p));
                 }
             }
         }
 
         private void UpdateInventory()
         {
-            var products = GameSettings.Instance.MyCompany.Products;
-            var addOns = GameSettings.Instance.MyCompany.AddOns;
+            List<SoftwareProduct> products = GameSettings.Instance.MyCompany.Products;
+            List<AddOnProduct> addOns = GameSettings.Instance.MyCompany.AddOns;
             // for every product this company owns
-            foreach (var p in products)
+            foreach (SoftwareProduct p in products)
             {
-                this.UpdateInventoryForStockableItem(p, p.Name, p.ID);
+                UpdateInventoryForStockableItem(p, p.Name, p.ID);
             }
+
             // for every add on
-            foreach (var p in addOns)
+            foreach (AddOnProduct p in addOns)
             {
-                this.UpdateInventoryForStockableItem(p, p.Name, null);
+                UpdateInventoryForStockableItem(p, p.Name, null);
             }
         }
 
         private void UpdateInventoryForStockableItem(IStockable p, string name, uint? id)
         {
-            if (p.PhysicalCopies < (p.GetLastPhysicalSales() * ManageStock))
+            if (p.PhysicalCopies < p.GetLastPhysicalSales() * ManageStock)
             {
                 long stockToBuy = Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageStock) - p.PhysicalCopies;
-
 
 
                 // Do we have printers?
                 if (GameSettings.Instance.ProductPrinters.Count > 0)
                 {
-                    string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Printing {3}",
-                    name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
+                    string msg = string.Format("{0} sold {1} last month. Stock is only {2}. Printing {3}",
+                        name,
+                        p.GetLastPhysicalSales(),
+                        p.PhysicalCopies,
+                        stockToBuy);
 
                     if (ManageStockNotifications && id.HasValue)
                     {
-                        HUD.Instance.AddPopupMessage(msg, "Info",
-                        PopupManager.PopUpAction.OpenProductDetails, id.Value, PopupManager.NotificationSound.Neutral, 1f,
-                        PopupManager.PopupIDs.None, 1);
+                        HUD.Instance.AddPopupMessage(msg,
+                            "Info",
+                            PopupManager.PopUpAction.OpenProductDetails,
+                            id.Value,
+                            PopupManager.NotificationSound.Neutral,
+                            1f);
                     }
                     else
                     {
@@ -167,7 +174,9 @@ namespace SIncLib
                     }
                     else
                     {
-                        Console.Log(string.Format("Print job for {0} already exists. Has value: {1}", name, printJob.Limit.HasValue ? printJob.Limit.Value.ToString() : "false"));
+                        Console.Log(string.Format("Print job for {0} already exists. Has value: {1}",
+                            name,
+                            printJob.Limit.HasValue ? printJob.Limit.Value.ToString() : "false"));
                         if (printJob.Limit.HasValue)
                         {
                             Console.Log(string.Format("Updating print job for {0} to {1}", name, stockToBuy));
@@ -177,41 +186,55 @@ namespace SIncLib
                 }
                 else
                 {
-                    string msg = String.Format("{0} sold {1} last month. Stock is only {2}. Buying {3}",
-                    name, p.GetLastPhysicalSales(), p.PhysicalCopies, stockToBuy);
+                    string msg = string.Format("{0} sold {1} last month. Stock is only {2}. Buying {3}",
+                        name,
+                        p.GetLastPhysicalSales(),
+                        p.PhysicalCopies,
+                        stockToBuy);
 
                     if (ManageStockNotifications && id.HasValue)
                     {
-                        HUD.Instance.AddPopupMessage(msg, "Info",
-                            PopupManager.PopUpAction.OpenProductDetails, id.Value, PopupManager.NotificationSound.Neutral, 1f,
-                            PopupManager.PopupIDs.None, 1);
+                        HUD.Instance.AddPopupMessage(msg,
+                            "Info",
+                            PopupManager.PopUpAction.OpenProductDetails,
+                            id.Value,
+                            PopupManager.NotificationSound.Neutral,
+                            1f);
                     }
                     else
                     {
                         Console.Log(msg);
                     }
 
-                    float num = (float)stockToBuy * p.GetPrintPrice();
+                    float num = stockToBuy * p.GetPrintPrice();
                     if (GameSettings.Instance.MyCompany.CanMakeTransaction(-num))
                     {
-                        GameSettings.Instance.MyCompany.MakeTransaction(-num, Company.TransactionCategory.Distribution, "Copy order");
+                        GameSettings.Instance.MyCompany.MakeTransaction(-num,
+                            Company.TransactionCategory.Distribution,
+                            "Copy order");
 
                         p.PhysicalCopies += (uint)stockToBuy;
-                        p.AddLoss((float)stockToBuy * p.GetPrintPrice(), SoftwareProduct.LossType.Copies, true);
+                        p.AddLoss(stockToBuy * p.GetPrintPrice(), SoftwareProduct.LossType.Copies, true);
                     }
                     else
                     {
                         if (id.HasValue)
                         {
-                            HUD.Instance.AddPopupMessage("CannotAfford".Loc(), "Warning",
-                         PopupManager.PopUpAction.OpenProductDetails, id.Value, PopupManager.NotificationSound.Warning, 2f,
-                         PopupManager.PopupIDs.None, 1);
+                            HUD.Instance.AddPopupMessage("CannotAfford".Loc(),
+                                "Warning",
+                                PopupManager.PopUpAction.OpenProductDetails,
+                                id.Value,
+                                PopupManager.NotificationSound.Warning,
+                                2f);
                         }
                         else
                         {
-                            HUD.Instance.AddPopupMessage("CannotAfford".Loc(), "Warning",
-                                PopupManager.PopUpAction.None, 0, PopupManager.NotificationSound.Warning, 2f,
-                                PopupManager.PopupIDs.None, 1);
+                            HUD.Instance.AddPopupMessage("CannotAfford".Loc(),
+                                "Warning",
+                                PopupManager.PopUpAction.None,
+                                0,
+                                PopupManager.NotificationSound.Warning,
+                                2f);
                         }
                     }
                 }
@@ -221,7 +244,9 @@ namespace SIncLib
         private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
         {
             if (scene == null || scene.name == null)
+            {
                 return;
+            }
 
             //Other scenes include MainScene and Customization
             if (scene.name.Equals("MainMenu") && SIncLibUI.btn != null && SIncLibUI.btn.gameObject != null)
@@ -239,8 +264,14 @@ namespace SIncLib
             SIncLibMod.ModActive = false;
             if (!SIncLibMod.ModActive && GameSettings.Instance != null && HUD.Instance != null)
             {
-                HUD.Instance.AddPopupMessage("SIncLibUI has been deactivated!", "Cogs", PopupManager.PopUpAction.None,
-                    0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0);
+                HUD.Instance.AddPopupMessage("SIncLibUI has been deactivated!",
+                    "Cogs",
+                    PopupManager.PopUpAction.None,
+                    0,
+                    PopupManager.NotificationSound.Neutral,
+                    0f,
+                    PopupManager.PopupIDs.None,
+                    0);
             }
         }
 
@@ -249,8 +280,14 @@ namespace SIncLib
             SIncLibMod.ModActive = true;
             if (SIncLibMod.ModActive && GameSettings.Instance != null && HUD.Instance != null)
             {
-                HUD.Instance.AddPopupMessage("SIncLibUI has been activated!", "Cogs", PopupManager.PopUpAction.None,
-                    0, PopupManager.NotificationSound.Neutral, 0f, PopupManager.PopupIDs.None, 0);
+                HUD.Instance.AddPopupMessage("SIncLibUI has been activated!",
+                    "Cogs",
+                    PopupManager.PopUpAction.None,
+                    0,
+                    PopupManager.NotificationSound.Neutral,
+                    0f,
+                    PopupManager.PopupIDs.None,
+                    0);
             }
         }
 
@@ -281,10 +318,16 @@ namespace SIncLib
                     SoftwareProduct softwareProduct = workItem.SequelTo;
                     SoftwareProduct sequelTo = softwareProduct == null || !softwareProduct.Traded
                         ? softwareProduct
-                        : (SoftwareProduct)null;
+                        : null;
 
-                    float devTime = workItem.Type.DevTime(workItem.GetFeatures(), workItem.SWCategory, null, null, null, null,
-                        false, sequelTo);
+                    float devTime = workItem.Type.DevTime(workItem.GetFeatures(),
+                        workItem.SWCategory,
+                        null,
+                        null,
+                        null,
+                        null,
+                        false,
+                        sequelTo);
                     if (workItem.Type.OSSpecific && workItem.OSs != null)
                     {
                         devTime += Mathf.Max(workItem.OSs.Length - 1, 0);
@@ -293,22 +336,37 @@ namespace SIncLib
                     int[] employeeRatio = SoftwareType.GetOptimalEmployeeCount(devTime);
 
                     if ((AdjustDepartment & AdjustHRFlags.Art) != 0)
+                    {
                         MaxArt = Mathf.Max(MaxArt, Mathf.CeilToInt(employeeRatio[1] * (1f - workItem.CodeArtRatio)));
-                    if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
-                        MaxCode = Mathf.Max(MaxCode, Mathf.CeilToInt(employeeRatio[1] * workItem.CodeArtRatio));
-                    if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
-                        MaxDesign = Mathf.Max(MaxDesign, employeeRatio[0]);
+                    }
 
+                    if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
+                    {
+                        MaxCode = Mathf.Max(MaxCode, Mathf.CeilToInt(employeeRatio[1] * workItem.CodeArtRatio));
+                    }
+
+                    if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
+                    {
+                        MaxDesign = Mathf.Max(MaxDesign, employeeRatio[0]);
+                    }
                 }
 
                 if (AdjustHR)
                 {
                     if ((AdjustDepartment & AdjustHRFlags.Art) != 0)
+                    {
                         team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)] = MaxArt;
+                    }
+
                     if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
+                    {
                         team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)] = MaxCode;
+                    }
+
                     if ((AdjustDepartment & AdjustHRFlags.Design) != 0)
+                    {
                         team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)] = MaxDesign;
+                    }
                 }
 
                 Console.Log(string.Format("Total staff required: C: {0} D: {1} A: {2}",
@@ -324,16 +382,26 @@ namespace SIncLib
                 SoftwareProduct softwareProduct = workItem.SequelTo;
                 SoftwareProduct sequelTo = softwareProduct == null || !softwareProduct.Traded
                     ? softwareProduct
-                    : (SoftwareProduct)null;
+                    : null;
 
 
-                var monthsCodeArt = workItem.Type.GetSpecializationMonthsCodeArt(workItem.GetFeatures(), workItem.SWCategory, GameSettings.Instance.MyCompany,
-                    workItem.TechLevels, workItem.OSs, workItem.Framework, false, sequelTo);
+                Dictionary<string, float[]> monthsCodeArt = workItem.Type.GetSpecializationMonthsCodeArt(
+                    workItem.GetFeatures(),
+                    workItem.SWCategory,
+                    GameSettings.Instance.MyCompany,
+                    workItem.TechLevels,
+                    workItem.OSs,
+                    workItem.Framework,
+                    false,
+                    sequelTo);
                 Console.Log("----");
                 foreach (KeyValuePair<string, float[]> keyValuePair in monthsCodeArt)
                 {
-                    Console.Log(string.Format("monthsCodeAr: {0} {1}", keyValuePair.Key, String.Join(",", keyValuePair.Value.Select(v => v.ToString()).ToArray())));
+                    Console.Log(string.Format("monthsCodeAr: {0} {1}",
+                        keyValuePair.Key,
+                        string.Join(",", keyValuePair.Value.Select(v => v.ToString()).ToArray())));
                 }
+
                 if (specializationMonths == null)
                 {
                     specializationMonths = monthsCodeArt;
@@ -375,18 +443,22 @@ namespace SIncLib
             foreach (KeyValuePair<string, float[]> specialization in specializationMonths)
             {
                 int numCodersRequired =
-                    Mathf.CeilToInt((specialization.Value[0] / totalMonths[0]) *
+                    Mathf.CeilToInt(specialization.Value[0] / totalMonths[0] *
                                     team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)]);
                 int numDesignersRequired =
-                    Mathf.CeilToInt((specialization.Value[0] / totalMonths[0]) *
+                    Mathf.CeilToInt(specialization.Value[0] / totalMonths[0] *
                                     team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Designer)]);
-                int numArtistsRequired = totalMonths[1] > 0 ?
-                    Mathf.CeilToInt((specialization.Value[1] / totalMonths[1]) *
-                                    team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)]) : 0;
+                int numArtistsRequired = totalMonths[1] > 0
+                    ? Mathf.CeilToInt(specialization.Value[1] / totalMonths[1] *
+                                      team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)])
+                    : 0;
 
                 Console.Log(
-                    string.Format("Num {0} staff required: C: {1} D: {2} A: {3}", specialization.Key,
-                        numCodersRequired, numDesignersRequired, numArtistsRequired));
+                    string.Format("Num {0} staff required: C: {1} D: {2} A: {3}",
+                        specialization.Key,
+                        numCodersRequired,
+                        numDesignersRequired,
+                        numArtistsRequired));
 
                 // Coders
                 if ((AdjustDepartment & AdjustHRFlags.Code) != 0)
@@ -396,7 +468,8 @@ namespace SIncLib
                             a.employee != null
                                 ? a.employee
                                     .GetSpecialization(Employee.EmployeeRole.Programmer,
-                                        specialization.Key, a)
+                                        specialization.Key,
+                                        a)
                                 : (float?)null)
                         .Take(numCodersRequired));
                 }
@@ -409,7 +482,8 @@ namespace SIncLib
                             a.employee != null
                                 ? a.employee
                                     .GetSpecialization(Employee.EmployeeRole.Designer,
-                                        specialization.Key, a)
+                                        specialization.Key,
+                                        a)
                                 : (float?)null)
                         .Take(numDesignersRequired));
                 }
@@ -422,7 +496,8 @@ namespace SIncLib
                             a.employee != null
                                 ? a.employee
                                     .GetSpecialization(Employee.EmployeeRole.Artist,
-                                        specialization.Key, a)
+                                        specialization.Key,
+                                        a)
                                 : (float?)null)
                         .Take(numArtistsRequired));
                 }
@@ -458,15 +533,14 @@ namespace SIncLib
             }
 
             // Make sure team has enough staff
-            var unattachedStaff = GameSettings
+            IEnumerable<Actor> unattachedStaff = GameSettings
                 .Instance.sActorManager.Actors.Where(a => a.GetTeam() == null);
 
             if (chosenEmployees.Count(a => a.employee.IsRole(Employee.EmployeeRole.Programmer)) <
                 team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Programmer)])
             {
                 chosenEmployees.AddRange(unattachedStaff.OrderByDescending(a => a.employee != null
-                        ? a.employee.GetSkill(Employee
-                            .EmployeeRole
+                        ? a.employee.GetSkill(Employee.EmployeeRole
                             .Programmer)
                         : (float?)null)
                     .Take(team.HR.MaxEmployees
@@ -478,8 +552,7 @@ namespace SIncLib
             {
                 chosenEmployees.AddRange(unattachedStaff.OrderByDescending(a =>
                         a.employee != null
-                            ? a.employee.GetSkill(Employee
-                                .EmployeeRole
+                            ? a.employee.GetSkill(Employee.EmployeeRole
                                 .Designer)
                             : (float?)null)
                     .Take(team.HR.MaxEmployees
@@ -490,8 +563,7 @@ namespace SIncLib
                 team.HR.MaxEmployees[EmployeeIndex(Employee.EmployeeRole.Artist)])
             {
                 chosenEmployees.AddRange(unattachedStaff.OrderByDescending(a => a.employee != null
-                        ? a.employee.GetSkill(Employee
-                            .EmployeeRole
+                        ? a.employee.GetSkill(Employee.EmployeeRole
                             .Artist)
                         : (float?)null)
                     .Take(team.HR.MaxEmployees
@@ -508,7 +580,7 @@ namespace SIncLib
             try
             {
                 List<GroupCounts> teamCounts = newActors.GroupBy(e => e.Team)
-                    .Select(group => new GroupCounts()
+                    .Select(group => new GroupCounts
                     {
                         Key = group.Key,
                         Count = group.Count()
@@ -522,7 +594,7 @@ namespace SIncLib
                 }
 
                 // Which staff are still unattached
-                foreach (var teamCount in teamCounts)
+                foreach (GroupCounts teamCount in teamCounts)
                 {
                     unattachedStaff = unattachedStaff.Where(e => e.GetTeam() == null);
                     Console.Log(string.Format("After reassignment, {0} staff are unassigned.",
@@ -548,9 +620,14 @@ namespace SIncLib
             if (unattachedStaff.Any())
             {
                 HUD.Instance.AddPopupMessage(
-                    unattachedStaff.Count() + " staff are without a team following reassignemnt", "Cogs",
+                    unattachedStaff.Count() + " staff are without a team following reassignemnt",
+                    "Cogs",
                     PopupManager.PopUpAction.None,
-                    0, PopupManager.NotificationSound.Issue, 0f, PopupManager.PopupIDs.None, 0);
+                    0,
+                    PopupManager.NotificationSound.Issue,
+                    0f,
+                    PopupManager.PopupIDs.None,
+                    0);
             }
 
 
@@ -558,5 +635,20 @@ namespace SIncLib
             return true;
         }
 
+        private struct GroupCounts
+        {
+            public string Key;
+            public int Count;
+        }
+
+        /// <summary>
+        ///     For some reason unknown to me, the dynamic compiler does not like this when its an enum
+        /// </summary>
+        public struct AdjustHRFlags
+        {
+            public const int Code = 1;
+            public const int Art = 2;
+            public const int Design = 4;
+        }
     }
 }

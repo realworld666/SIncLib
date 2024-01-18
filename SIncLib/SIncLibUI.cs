@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,8 +10,14 @@ namespace SIncLib
     {
         public static Button btn;
 
-        public bool ModActive { get; set; }
-
+        public static GUIWindow Window;
+        private static readonly string title = "SIncLib by Otters Pocket - v" + SIncLibMod.Version;
+        public static bool shown;
+        private static HashSet<string> DevTeams = new HashSet<string>();
+        public static HashSet<string> SerialTeams = new HashSet<string>();
+        private static Text TeamText;
+        private static Text SourceText;
+        private static Text SerialText;
 
         public static void SpawnButton()
         {
@@ -22,17 +27,23 @@ namespace SIncLib
             btn.name = "SIncLibButton";
 
             WindowManager.AddElementToElement(btn.gameObject,
-                                              WindowManager.FindElementPath("MainPanel/Holder/FanPanel").gameObject,
-                                              new Rect(264, 0, 100, 32),
-                                              new Rect(0, 0, 0, 0));
+                WindowManager.FindElementPath("MainPanel/Holder/FanPanel").gameObject,
+                new Rect(264, 0, 100, 32),
+                new Rect(0, 0, 0, 0));
         }
 
         public override void OnDeactivate()
         {
             if (btn != null)
+            {
                 Destroy(btn.gameObject);
+            }
+
             if (Window != null)
+            {
                 Destroy(Window.gameObject);
+            }
+
             shown = false;
         }
 
@@ -43,13 +54,6 @@ namespace SIncLib
                 SpawnButton();
             }
         }
-
-        public static GUIWindow Window;
-        private static string title = "SIncLib by Otters Pocket - v" + SIncLibMod.Version;
-        public static bool shown = false;
-        private static HashSet<string> DevTeams = new HashSet<string>();
-        private static Text TeamText;
-        private static Text SourceText;
 
         public static void Show()
         {
@@ -67,7 +71,7 @@ namespace SIncLib
         private static void Init()
         {
             DevTeams.Clear();
-            DevTeams.AddRange<string>((IEnumerable<string>)GameSettings.Instance.GetDefaultTeams("Design"));
+            DevTeams.AddRange(GameSettings.Instance.GetDefaultTeams("Design"));
 
             Window = WindowManager.SpawnWindow();
             Window.InitialTitle = Window.TitleText.text = Window.NonLocTitle = title;
@@ -79,98 +83,112 @@ namespace SIncLib
             if (Window.name == "SIncLibOptions")
             {
                 Window.GetComponentsInChildren<Button>()
-                      .SingleOrDefault(x => x.name == "CloseButton")
-                      .onClick.AddListener(() => shown = false);
+                    .SingleOrDefault(x => x.name == "CloseButton")
+                    .onClick.AddListener(() => shown = false);
             }
 
 
             Utils.AddLabel("Team Manager:", new Rect(10, 10, 250, 32));
             Utils.AddLabel("Team:", new Rect(10, 52, 250, 32));
 
-            var teamButton = Utils.AddButton("SELECT TEAM", new Rect(100, 42, 250, 32), ShowTeamWindow);
+            Button teamButton = Utils.AddButton("SELECT TEAM", new Rect(100, 42, 250, 32), ShowTeamWindow);
             TeamText = teamButton.GetComponentInChildren<Text>();
 
             Utils.AddLabel("Source From:", new Rect(400, 12, 250, 32));
 
-            var sourceButton = Utils.AddButton("SOURCE", new Rect(400, 42, 250, 32), ShowMultiTeamWindow);
+            Button sourceButton = Utils.AddButton("SOURCE", new Rect(400, 42, 250, 32), ShowMultiTeamWindow);
             SourceText = sourceButton.GetComponentInChildren<Text>();
             UpdateTeamText();
 
             Utils.AddLabel("Adjust only:", new Rect(10, 80, 250, 32));
-            Utils.AddToggle("Code", new Rect(10, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Code) != 0,
-                            (state) =>
-                            {
-                                if (state)
-                                    SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Code;
-                                else
-                                {
-                                    SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Code;
-                                }
-                            });
-            Utils.AddToggle("Art", new Rect(100, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Art) != 0,
-                            (state) =>
-                            {
-                                if (state)
-                                    SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Art;
-                                else
-                                {
-                                    SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Art;
-                                }
-                            });
-            Utils.AddToggle("Design", new Rect(200, 110, 250, 32),
-                            (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Design) != 0,
-                            (state) =>
-                            {
-                                if (state)
-                                    SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Design;
-                                else
-                                {
-                                    SIncLibBehaviour.Instance.AdjustDepartment &=
-                                        ~SIncLibBehaviour.AdjustHRFlags.Design;
-                                }
-                            });
+            Utils.AddToggle("Code",
+                new Rect(10, 110, 250, 32),
+                (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Code) != 0,
+                state =>
+                {
+                    if (state)
+                    {
+                        SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Code;
+                    }
+                    else
+                    {
+                        SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Code;
+                    }
+                });
+            Utils.AddToggle("Art",
+                new Rect(100, 110, 250, 32),
+                (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Art) != 0,
+                state =>
+                {
+                    if (state)
+                    {
+                        SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Art;
+                    }
+                    else
+                    {
+                        SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Art;
+                    }
+                });
+            Utils.AddToggle("Design",
+                new Rect(200, 110, 250, 32),
+                (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Design) != 0,
+                state =>
+                {
+                    if (state)
+                    {
+                        SIncLibBehaviour.Instance.AdjustDepartment |= SIncLibBehaviour.AdjustHRFlags.Design;
+                    }
+                    else
+                    {
+                        SIncLibBehaviour.Instance.AdjustDepartment &=
+                            ~SIncLibBehaviour.AdjustHRFlags.Design;
+                    }
+                });
 
-            Utils.AddToggle("Transfer Idle Only", new Rect(10, 140, 250, 32),
-                            SIncLibBehaviour.Instance.IdleOnly,
-                            (state) => { SIncLibBehaviour.Instance.IdleOnly = state; });
+            Utils.AddToggle("Transfer Idle Only",
+                new Rect(10, 140, 250, 32),
+                SIncLibBehaviour.Instance.IdleOnly,
+                state => { SIncLibBehaviour.Instance.IdleOnly = state; });
 
-            Utils.AddToggle("Adjust HR rules", new Rect(200, 140, 250, 32),
-                            SIncLibBehaviour.Instance.AdjustHR,
-                            (state) => { SIncLibBehaviour.Instance.AdjustHR = state; });
+            Utils.AddToggle("Adjust HR rules",
+                new Rect(200, 140, 250, 32),
+                SIncLibBehaviour.Instance.AdjustHR,
+                state => { SIncLibBehaviour.Instance.AdjustHR = state; });
 
             Utils.AddButton("Optimise Team", new Rect(210, 180, 250, 32), () => OptimiseTeam());
             //Utils.AddButton("Show Auto Dev", new Rect(210, 220, 250, 32), () => ShowAutoDev());
 
-            Utils.AddToggle("Get out of stock notifications for acquired software", new Rect(10, 260, 600, 32),
-                            SIncLibBehaviour.Instance.StockNotifications,
-                            (state) =>
-                            {
-                                SIncLibBehaviour.Instance.StockNotifications = state;
-                                PlayerPrefs.SetInt("SIncLib_StockNotifications", state ? 1 : 0);
-                                PlayerPrefs.Save();
-                            });
+            Utils.AddToggle("Get out of stock notifications for acquired software",
+                new Rect(10, 260, 600, 32),
+                SIncLibBehaviour.Instance.StockNotifications,
+                state =>
+                {
+                    SIncLibBehaviour.Instance.StockNotifications = state;
+                    PlayerPrefs.SetInt("SIncLib_StockNotifications", state ? 1 : 0);
+                    PlayerPrefs.Save();
+                });
 
             Utils.AddLabel("Keep stock levels at % of last months sales", new Rect(10, 290, 600, 32));
-            Utils.AddIntField(Mathf.CeilToInt(SIncLibBehaviour.Instance.ManageStock * 100), new Rect(300, 280, 50, 32),
-                            (value) =>
-                            {
-                                SIncLibBehaviour.Instance.ManageStock = (float)value / 100f;
-                                PlayerPrefs.SetFloat("SIncLib_ManageStock", SIncLibBehaviour.Instance.ManageStock);
-                                PlayerPrefs.Save();
-                            });
-            Utils.AddToggle("Notifications?", new Rect(370, 290, 600, 32),
-                           SIncLibBehaviour.Instance.ManageStockNotifications,
-                           (state) =>
-                           {
-                               SIncLibBehaviour.Instance.ManageStockNotifications = state;
-                               PlayerPrefs.SetInt("SIncLib_ManageStockNotifications", state ? 1 : 0);
-                               PlayerPrefs.Save();
-                           });
+            Utils.AddIntField(Mathf.CeilToInt(SIncLibBehaviour.Instance.ManageStock * 100),
+                new Rect(300, 280, 50, 32),
+                value =>
+                {
+                    SIncLibBehaviour.Instance.ManageStock = value / 100f;
+                    PlayerPrefs.SetFloat("SIncLib_ManageStock", SIncLibBehaviour.Instance.ManageStock);
+                    PlayerPrefs.Save();
+                });
+            Utils.AddToggle("Notifications?",
+                new Rect(370, 290, 600, 32),
+                SIncLibBehaviour.Instance.ManageStockNotifications,
+                state =>
+                {
+                    SIncLibBehaviour.Instance.ManageStockNotifications = state;
+                    PlayerPrefs.SetInt("SIncLib_ManageStockNotifications", state ? 1 : 0);
+                    PlayerPrefs.Save();
+                });
 
-            Utils.AddButton("Addon Sales History", new Rect(10, 340, 250, 32), () => SIncLibAddon.ShowWindow());
-
+            //Utils.AddButton("Serial Work Items", new Rect(10, 340, 250, 32), ShowSerialTeamWindow);
+            //SerialText = sourceButton.GetComponentInChildren<Text>();
             //Utils.AddButton("Market Research", new Rect(10, 300, 250, 32), () => SIncLibMarketResearchUI.ShowWindow());
         }
 
@@ -188,41 +206,51 @@ namespace SIncLib
 
             if (!GameSettings.Instance.sActorManager.Teams.ContainsKey(TeamText.text))
             {
-                HUD.Instance.AddPopupMessage("Could not find team with name " + TeamText.text, "Exclamation",
-                                             PopupManager.PopUpAction.None, 0U, PopupManager.NotificationSound.Issue,
-                                             2f, PopupManager.PopupIDs.None, 1);
+                HUD.Instance.AddPopupMessage("Could not find team with name " + TeamText.text,
+                    "Exclamation",
+                    PopupManager.PopUpAction.None,
+                    0U,
+                    PopupManager.NotificationSound.Issue,
+                    2f);
                 return;
             }
 
             if (!DevTeams.Any())
             {
                 HUD.Instance
-                   .AddPopupMessage("You need to select at least one team to pull team members from excluding the target team",
-                                    "Exclamation", PopupManager.PopUpAction.None, 0U,
-                                    PopupManager.NotificationSound.Issue, 2f, PopupManager.PopupIDs.None, 1);
+                    .AddPopupMessage(
+                        "You need to select at least one team to pull team members from excluding the target team",
+                        "Exclamation",
+                        PopupManager.PopUpAction.None,
+                        0U,
+                        PopupManager.NotificationSound.Issue,
+                        2f);
                 return;
             }
 
-            var team = GameSettings.Instance.sActorManager.Teams[TeamText.text];
+            Team team = GameSettings.Instance.sActorManager.Teams[TeamText.text];
             string error = "";
             if (!SIncLibBehaviour.Instance.TransferBestAvailableStaff(team,
-                                                                      DevTeams.Select(t => GameSettings
-                                                                                           .Instance.sActorManager
-                                                                                           .Teams[t]).ToArray(),
-                                                                      out error))
+                    DevTeams.Select(t => GameSettings
+                        .Instance.sActorManager
+                        .Teams[t]).ToArray(),
+                    out error))
             {
-                HUD.Instance.AddPopupMessage("Could not optimise team: " + error, "Exclamation",
-                                             PopupManager.PopUpAction.None, 0U, PopupManager.NotificationSound.Issue,
-                                             2f, PopupManager.PopupIDs.None, 1);
+                HUD.Instance.AddPopupMessage("Could not optimise team: " + error,
+                    "Exclamation",
+                    PopupManager.PopUpAction.None,
+                    0U,
+                    PopupManager.NotificationSound.Issue,
+                    2f);
                 return;
             }
-            else
-            {
-                HUD.Instance.AddPopupMessage("Team optimised!", "Cogs", PopupManager.PopUpAction.None,
-                                             0, PopupManager.NotificationSound.Neutral, 0f,
-                                             PopupManager.PopupIDs.None);
-                return;
-            }
+
+            HUD.Instance.AddPopupMessage("Team optimised!",
+                "Cogs",
+                PopupManager.PopUpAction.None,
+                0,
+                PopupManager.NotificationSound.Neutral,
+                0f);
         }
 
         private static void ShowTeamWindow()
@@ -237,21 +265,46 @@ namespace SIncLib
 
         private static void ShowMultiTeamWindow()
         {
-            HUD.Instance.TeamSelectWindow.Show(false, DevTeams, (Action<string[]>)(t =>
-            {
-                DevTeams.Clear();
-                DevTeams.AddRange<string>((IList<string>)t);
-                UpdateTeamText();
-            }), (string)null);
+            HUD.Instance.TeamSelectWindow.Show(false,
+                DevTeams,
+                t =>
+                {
+                    DevTeams.Clear();
+                    DevTeams.AddRange(t);
+                    UpdateTeamText();
+                },
+                null);
+        }
+
+        private static void ShowSerialTeamWindow()
+        {
+            HUD.Instance.TeamSelectWindow.Show(false,
+                SerialTeams,
+                t =>
+                {
+                    SerialTeams.Clear();
+                    SerialTeams.AddRange(t);
+                    UpdateSerialTeamText();
+                },
+                null);
         }
 
         public static void UpdateTeamText()
         {
             DevTeams = DevTeams
-                       .Where<string>((Func<string, bool>)(x =>
-                                          GameSettings.Instance.sActorManager.Teams.ContainsKey(x)))
-                       .ToHashSet<string>();
-            SourceText.text = DevTeams.GetListAbbrev<string>("Team", (Func<string, string>)null);
+                .Where(x =>
+                    GameSettings.Instance.sActorManager.Teams.ContainsKey(x))
+                .ToHashSet();
+            SourceText.text = DevTeams.GetListAbbrev("Team");
+        }
+
+        public static void UpdateSerialTeamText()
+        {
+            SerialTeams = SerialTeams
+                .Where(x =>
+                    GameSettings.Instance.sActorManager.Teams.ContainsKey(x))
+                .ToHashSet();
+            SerialText.text = SerialTeams.GetListAbbrev("Team");
         }
     }
 }

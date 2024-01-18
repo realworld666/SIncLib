@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e0161be9-ea87-4637-af25-d05b726bc6bd" name="Changes" comment="Updated to be compatible with latest version">
+      <change beforePath="$PROJECT_DIR$/SIncLib/AddonSale.cs" beforeDir="false" afterPath="$PROJECT_DIR$/SIncLib/AddonSale.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SIncLib/SIncLibAddon.cs" beforeDir="false" afterPath="$PROJECT_DIR$/SIncLib/SIncLibAddon.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SIncLib/SIncLibBehaviour.cs" beforeDir="false" afterPath="$PROJECT_DIR$/SIncLib/SIncLibBehaviour.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SIncLib/SIncLibMod.cs" beforeDir="false" afterPath="$PROJECT_DIR$/SIncLib/SIncLibMod.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SIncLib/SIncLibUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/SIncLib/SIncLibUI.cs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/8efb5b64b9fa4a0ab4c8959e00b20dba411400/53/54ba2e37/Team.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/8efb5b64b9fa4a0ab4c8959e00b20dba411400/cc/e1dc46c9/WorkItem.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/davec/source/repos/realworld666/SIncLib/SIncLib/SIncLibBehaviour.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/davec/source/repos/realworld666/SIncLib/SIncLib/SIncLibMod.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/davec/source/repos/realworld666/SIncLib/SIncLib/SIncLibUI.cs" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="ProjectId" id="2OIHMijwkC5L6xCD2TZbEuHjyVq" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;rider.code.cleanup.on.save&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;actions.on.save&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;rider.external.source.directories&quot;: [
+      &quot;C:\\Users\\davec\\AppData\\Roaming\\JetBrains\\Rider2023.1\\resharper-host\\DecompilerCache&quot;,
+      &quot;C:\\Users\\davec\\AppData\\Roaming\\JetBrains\\Rider2023.1\\resharper-host\\SourcesCache&quot;,
+      &quot;C:\\Users\\davec\\AppData\\Local\\Symbols\\src&quot;
+    ]
+  }
+}</component>
+  <component name="RunManager">
+    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
+      <option name="allowRunningInParallel" value="false" />
+      <option name="listenPortForConnections" value="false" />
+      <option name="pid" />
+      <option name="projectPathOnTarget" />
+      <option name="selectedOptions">
+        <list />
+      </option>
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e0161be9-ea87-4637-af25-d05b726bc6bd" name="Changes" comment="" />
+      <created>1681241132959</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1681241132959</updated>
+      <workItem from="1681241132961" duration="2232000" />
+      <workItem from="1681412365397" duration="4454000" />
+      <workItem from="1687549292779" duration="327000" />
+    </task>
+    <task id="LOCAL-00001" summary="Updated to be compatible with latest version">
+      <created>1681415531428</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1681415531428</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Updated to be compatible with latest version" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated to be compatible with latest version" />
+  </component>
+</project>
