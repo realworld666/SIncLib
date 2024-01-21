@@ -91,12 +91,12 @@ namespace SIncLib
             Utils.AddLabel("Team Manager:", new Rect(10, 10, 250, 32));
             Utils.AddLabel("Team:", new Rect(10, 52, 250, 32));
 
-            Button teamButton = Utils.AddButton("SELECT TEAM", new Rect(100, 42, 250, 32), ShowTeamWindow);
+            Button teamButton = Utils.AddButton("SELECT TEAM", new Rect(100, 42, 250, 32), ShowTeamWindow, SIncLibUI.Window);
             TeamText = teamButton.GetComponentInChildren<Text>();
 
             Utils.AddLabel("Source From:", new Rect(400, 12, 250, 32));
 
-            Button sourceButton = Utils.AddButton("SOURCE", new Rect(400, 42, 250, 32), ShowMultiTeamWindow);
+            Button sourceButton = Utils.AddButton("SOURCE", new Rect(400, 42, 250, 32), ShowMultiTeamWindow, SIncLibUI.Window);
             SourceText = sourceButton.GetComponentInChildren<Text>();
             UpdateTeamText();
 
@@ -114,7 +114,7 @@ namespace SIncLib
                     {
                         SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Code;
                     }
-                });
+                }, SIncLibUI.Window);
             Utils.AddToggle("Art",
                 new Rect(100, 110, 250, 32),
                 (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Art) != 0,
@@ -128,7 +128,7 @@ namespace SIncLib
                     {
                         SIncLibBehaviour.Instance.AdjustDepartment &= ~SIncLibBehaviour.AdjustHRFlags.Art;
                     }
-                });
+                }, SIncLibUI.Window);
             Utils.AddToggle("Design",
                 new Rect(200, 110, 250, 32),
                 (SIncLibBehaviour.Instance.AdjustDepartment & SIncLibBehaviour.AdjustHRFlags.Design) != 0,
@@ -143,19 +143,19 @@ namespace SIncLib
                         SIncLibBehaviour.Instance.AdjustDepartment &=
                             ~SIncLibBehaviour.AdjustHRFlags.Design;
                     }
-                });
+                }, SIncLibUI.Window);
 
             Utils.AddToggle("Transfer Idle Only",
                 new Rect(10, 140, 250, 32),
                 SIncLibBehaviour.Instance.IdleOnly,
-                state => { SIncLibBehaviour.Instance.IdleOnly = state; });
+                state => { SIncLibBehaviour.Instance.IdleOnly = state; }, SIncLibUI.Window);
 
             Utils.AddToggle("Adjust HR rules",
                 new Rect(200, 140, 250, 32),
                 SIncLibBehaviour.Instance.AdjustHR,
-                state => { SIncLibBehaviour.Instance.AdjustHR = state; });
+                state => { SIncLibBehaviour.Instance.AdjustHR = state; }, SIncLibUI.Window);
 
-            Utils.AddButton("Optimise Team", new Rect(210, 180, 250, 32), () => OptimiseTeam());
+            Utils.AddButton("Optimise Team", new Rect(210, 180, 250, 32), () => OptimiseTeam(), SIncLibUI.Window);
             //Utils.AddButton("Show Auto Dev", new Rect(210, 220, 250, 32), () => ShowAutoDev());
 
             Utils.AddToggle("Get out of stock notifications for acquired software",
@@ -166,7 +166,7 @@ namespace SIncLib
                     SIncLibBehaviour.Instance.StockNotifications = state;
                     PlayerPrefs.SetInt("SIncLib_StockNotifications", state ? 1 : 0);
                     PlayerPrefs.Save();
-                });
+                }, SIncLibUI.Window);
 
             Utils.AddLabel("Keep stock levels at % of last months sales", new Rect(10, 290, 600, 32));
             Utils.AddIntField(Mathf.CeilToInt(SIncLibBehaviour.Instance.ManageStock * 100),
@@ -176,7 +176,7 @@ namespace SIncLib
                     SIncLibBehaviour.Instance.ManageStock = value / 100f;
                     PlayerPrefs.SetFloat("SIncLib_ManageStock", SIncLibBehaviour.Instance.ManageStock);
                     PlayerPrefs.Save();
-                });
+                }, SIncLibUI.Window);
             Utils.AddToggle("Notifications?",
                 new Rect(370, 290, 600, 32),
                 SIncLibBehaviour.Instance.ManageStockNotifications,
@@ -185,8 +185,18 @@ namespace SIncLib
                     SIncLibBehaviour.Instance.ManageStockNotifications = state;
                     PlayerPrefs.SetInt("SIncLib_ManageStockNotifications", state ? 1 : 0);
                     PlayerPrefs.Save();
-                });
+                }, SIncLibUI.Window);
+            Utils.AddToggle("Hide Printing Notifications?",
+                               new Rect(500, 290, 600, 32),
+                                              SIncLibBehaviour.Instance.HidePrintingNotifications,
+                                                             state =>
+                                                             {
+                    SIncLibBehaviour.Instance.HidePrintingNotifications = state;
+                    PlayerPrefs.SetInt("SIncLib_HidePrintingNotifications", state ? 1 : 0);
+                    PlayerPrefs.Save();
+                }, SIncLibUI.Window);
 
+            Utils.AddButton("Porting manager", new Rect(10, 340, 250, 32), () => PortingManagerUI.Show(), SIncLibUI.Window);
             //Utils.AddButton("Serial Work Items", new Rect(10, 340, 250, 32), ShowSerialTeamWindow);
             //SerialText = sourceButton.GetComponentInChildren<Text>();
             //Utils.AddButton("Market Research", new Rect(10, 300, 250, 32), () => SIncLibMarketResearchUI.ShowWindow());

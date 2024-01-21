@@ -10,8 +10,7 @@ namespace SIncLib
     public class SIncLibBehaviour : ModBehaviour
     {
         public static SIncLibBehaviour Instance;
-
-
+        internal bool HidePrintingNotifications;
 
         public SIncLibBehaviour()
         {
@@ -49,6 +48,23 @@ namespace SIncLib
 
         private void Update()
         {
+            if (!SIncLibMod.ModActive || !isActiveAndEnabled)
+            {
+                return;
+            }
+
+            if (HidePrintingNotifications)
+            {
+                foreach (var msg in NotificationManager.Instance.AllMessages())
+                {
+                    if (msg.Message.Icon == "Box" && msg.Message.Type == NotificationManager.NotificationType.Good)
+                    {
+                        //NotificationManager.Instance.Remove(msg);
+                        msg.Remove();
+                    }
+                }
+            }
+
             if (GameSettings.Instance == null || GameSettings.Instance.sActorManager == null ||
                 GameSettings.Instance.sActorManager.Teams == null)
             {
@@ -101,7 +117,6 @@ namespace SIncLib
             {
                 UpdateInventory();
             }
-
         }
 
 

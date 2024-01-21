@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SIncLib</RootNamespace>
     <AssemblyName>SIncLib</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <LangVersion>4</LangVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -53,7 +54,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SIncLibAutoDevUI.cs" />
+    <Compile Include="PortingBehaviour.cs" />
+    <Compile Include="PortingJob.cs" />
+    <Compile Include="PortingManagerUI.cs" />
     <Compile Include="SIncLibBehaviour.cs" />
     <Compile Include="SIncLibMarketResearchUI.cs" />
     <Compile Include="SIncLibMod.cs" />
