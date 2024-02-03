@@ -5,7 +5,7 @@ namespace SIncLib
 {
     public class SIncLibMod : ModMeta
     {
-        public static string Version = "0.9.0";
+        public static string Version = "1.7.1";
         public static bool ModActive { get; set; }
 
         public override string Name

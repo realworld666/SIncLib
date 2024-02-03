@@ -75,7 +75,7 @@ namespace SIncLib
 
             Window = WindowManager.SpawnWindow();
             Window.InitialTitle = Window.TitleText.text = Window.NonLocTitle = title;
-            Window.MinSize.x = 670;
+            Window.MinSize.x = 700;
             Window.MinSize.y = 400;
             Window.name = "SIncLibOptions";
             Window.MainPanel.name = "SIncLibOptionsPanel";
@@ -191,10 +191,10 @@ namespace SIncLib
                                               SIncLibBehaviour.Instance.HidePrintingNotifications,
                                                              state =>
                                                              {
-                    SIncLibBehaviour.Instance.HidePrintingNotifications = state;
-                    PlayerPrefs.SetInt("SIncLib_HidePrintingNotifications", state ? 1 : 0);
-                    PlayerPrefs.Save();
-                }, SIncLibUI.Window);
+                                                                 SIncLibBehaviour.Instance.HidePrintingNotifications = state;
+                                                                 PlayerPrefs.SetInt("SIncLib_HidePrintingNotifications", state ? 1 : 0);
+                                                                 PlayerPrefs.Save();
+                                                             }, SIncLibUI.Window);
 
             Utils.AddButton("Porting manager", new Rect(10, 340, 250, 32), () => PortingManagerUI.Show(), SIncLibUI.Window);
             //Utils.AddButton("Serial Work Items", new Rect(10, 340, 250, 32), ShowSerialTeamWindow);

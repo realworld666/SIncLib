@@ -14,6 +14,7 @@ namespace SIncLib
 
 
         public HashSet<string> PortingTeams = new HashSet<string>();
+        [System.NonSerialized]
         public SimulatedCompany OutsourcedPorting = null;
         public int SupportForMonths = 12;
         public int MinimumUserbase = 1000;
@@ -59,6 +60,12 @@ namespace SIncLib
             }
             TimeOfDayOnOnDayPassed(null, null);
             TimeOfDay.OnDayPassed += TimeOfDayOnOnDayPassed;
+
+        }
+
+        private void OnDestroy()
+        {
+            TimeOfDay.OnDayPassed -= TimeOfDayOnOnDayPassed;
         }
 
         public override void OnActivate()
@@ -69,9 +76,11 @@ namespace SIncLib
         {
         }
 
+
+
         public void TimeOfDayOnOnDayPassed(object sender, EventArgs e)
         {
-            if (!Enabled)
+            if (!Enabled || !isActiveAndEnabled || GameSettings.Instance == null || GameSettings.Instance.MyCompany == null)
             {
                 return;
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Console = DevConsole.Console;
 
@@ -21,10 +22,35 @@ namespace SIncLib
             Instance = this;
         }
 
+        private void Start()
+        {
+            if (!SIncLibMod.ModActive || !isActiveAndEnabled)
+            {
+                return;
+            }
+
+            SceneManager.sceneLoaded += OnLevelFinishedLoading;
+
+        }
+
         public override void OnDeactivate()
         {
             shown = false;
             if (Window != null)
+            {
+                Destroy(Window.gameObject);
+            }
+        }
+
+        private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
+        {
+            if (scene == null || scene.name == null)
+            {
+                return;
+            }
+
+            //Other scenes include MainScene and Customization
+            if (scene.name.Equals("MainMenu") && Window != null && Window.gameObject != null)
             {
                 Destroy(Window.gameObject);
             }
@@ -63,37 +89,37 @@ namespace SIncLib
                     .onClick.AddListener(() => shown = false);
             }
 
-            Utils.AddLabel("Enabled", new Rect(10, 0, 250, 32), Window);
-            Utils.AddToggle("", new Rect(200, 0, 250, 32), PortingBehaviour.Instance.Enabled, b =>
+            Utils.AddLabel("Enabled", new Rect(10, 20, 250, 32), Window);
+            Utils.AddToggle("", new Rect(270, 20, 250, 32), PortingBehaviour.Instance.Enabled, b =>
             {
                 PortingBehaviour.Instance.Enabled = b;
                 PlayerPrefs.SetInt("PortingEnabled", b ? 1 : 0);
                 PlayerPrefs.Save();
             }, Window);
 
-            Utils.AddLabel("Porting Teams: ", new Rect(10, 40, 250, 32), Window);
-            Button teamButton = Utils.AddButton("SELECT TEAM", new Rect(200, 30, 250, 32), ShowTeamWindow, Window);
+            Utils.AddLabel("Porting Teams: ", new Rect(10, 60, 250, 32), Window);
+            Button teamButton = Utils.AddButton("SELECT TEAM", new Rect(270, 50, 250, 32), ShowTeamWindow, Window);
             TeamText = teamButton.GetComponentInChildren<Text>();
             UpdateTeamText();
 
-            Utils.AddLabel("Support products for (months): ", new Rect(10, 80, 250, 32), Window);
-            Utils.AddIntField(PortingBehaviour.Instance.SupportForMonths, new Rect(200, 70, 250, 32), i =>
+            Utils.AddLabel("Support products for (months): ", new Rect(10, 100, 250, 32), Window);
+            Utils.AddIntField(PortingBehaviour.Instance.SupportForMonths, new Rect(270, 90, 250, 32), i =>
             {
                 PortingBehaviour.Instance.MinimumUserbase = i;
                 PlayerPrefs.SetInt("SupportForMonths", i);
                 PlayerPrefs.Save();
             }, Window);
 
-            Utils.AddLabel("Port to OS with more than targetProd users: ", new Rect(10, 120, 250, 32), Window);
-            Utils.AddIntField(PortingBehaviour.Instance.MinimumUserbase, new Rect(200, 110, 250, 32), i =>
+            Utils.AddLabel("Port to OS with more than x active users: ", new Rect(10, 140, 250, 32), Window);
+            Utils.AddIntField(PortingBehaviour.Instance.MinimumUserbase, new Rect(270, 130, 250, 32), i =>
             {
                 PortingBehaviour.Instance.MinimumUserbase = i;
                 PlayerPrefs.SetInt("MinimumUserbase", i);
                 PlayerPrefs.Save();
             }, Window);
 
-            Utils.AddLabel("Parallel Jobs: ", new Rect(10, 160, 250, 32), Window);
-            Utils.AddIntField(PortingBehaviour.Instance.ConcurrentJobs, new Rect(200, 150, 250, 32), i =>
+            Utils.AddLabel("Parallel Jobs: ", new Rect(10, 180, 250, 32), Window);
+            Utils.AddIntField(PortingBehaviour.Instance.ConcurrentJobs, new Rect(270, 170, 250, 32), i =>
             {
                 PortingBehaviour.Instance.ConcurrentJobs = i;
                 PlayerPrefs.SetInt("ConcurrentJobs", i);
@@ -101,8 +127,6 @@ namespace SIncLib
             }, Window);
 
             RenderJobWindow();
-
-            Utils.AddButton("Test", new Rect(500, 30, 250, 32), TestPorting, Window);
         }
 
         private void TestPorting()
@@ -114,7 +138,7 @@ namespace SIncLib
 
         private void RenderJobWindow()
         {
-            ActiveJobs = Utils.AddListView(new Rect(10, 200, -20, -200 - 30), Window);
+            ActiveJobs = Utils.AddListView(new Rect(10, 220, -20, -200 - 30), Window);
 
             var nameColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("Name", x => x.Product.Name, false, new float?(220f), false, true);
             var osColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("OS", x => x.TargetProduct.Name, false, new float?(220f), false, true);
