@@ -107,6 +107,7 @@ namespace SIncLib
 
         private void TimeOfDayOnOnDayPassed(object sender, EventArgs e)
         {
+            Console.Log("---- New Day");
             if (StockNotifications)
             {
                 UpdateStockChecker();
@@ -195,16 +196,19 @@ namespace SIncLib
 
         private void UpdateInventoryForAddonProduct(AddOnProduct p, string name)
         {
-            if (p.PhysicalCopies < p.GetLastPhysicalSales() * ManageStock)
+            // Controllers are special case because they are included in the sales of the parent product
+            // and they can be sold separately
+            if (p.Type.Hardware)
             {
-                if (p.Type.Hardware)        // Controllers
+                var parent = p.Parent;
+                if (p.PhysicalCopies < (p.GetLastPhysicalSales() + parent.GetLastPhysicalSales()) * ManageStock)
                 {
                     HashSet<AssemblyLine> newLines = GameSettings.Instance.GetAssemblyLines()
-                        .Where<AssemblyLine>((Func<AssemblyLine, bool>)
-                        (x => x.IsCompatible(p.Manufacturing, p.HardwareMask, p.HardwareInputMask) > 0)).ToHashSet<AssemblyLine>();
+                    .Where<AssemblyLine>((Func<AssemblyLine, bool>)
+                    (x => x.IsCompatible(p.Manufacturing, p.HardwareMask, p.HardwareInputMask) > 0)).ToHashSet<AssemblyLine>();
 
                     Console.Log("Found " + newLines.Count + " assembly lines for " + name);
-                    long order = (Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageStock) - p.PhysicalCopies) * 2;      // Will double this because controllers are also included in the parent product
+                    long order = (Mathf.CeilToInt((p.GetLastPhysicalSales() + parent.GetLastPhysicalSales()) * ManageStock) - p.PhysicalCopies);
 
                     if (newLines.Count > 0)
                     {
@@ -219,10 +223,12 @@ namespace SIncLib
                     {
                         BuyCopies(p, name, null, order);
                     }
-                    return;
                 }
+                return;
+            }
 
-
+            if (p.PhysicalCopies < p.GetLastPhysicalSales() * ManageStock)
+            {
                 long stockToBuy = Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageStock) - p.PhysicalCopies;
 
                 // Do we have printers?
@@ -236,6 +242,7 @@ namespace SIncLib
                 }
 
             }
+
         }
 
         private void BuyCopies(IStockable p, string name, uint? id, long stockToBuy)

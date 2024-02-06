@@ -3,7 +3,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Console = DevConsole.Console;
 
 namespace SIncLib
 {
@@ -29,8 +28,13 @@ namespace SIncLib
                 return;
             }
 
+            SceneManager.sceneLoaded -= OnLevelFinishedLoading;
             SceneManager.sceneLoaded += OnLevelFinishedLoading;
+        }
 
+        private void OnDestroy()
+        {
+            SceneManager.sceneLoaded -= OnLevelFinishedLoading;
         }
 
         public override void OnDeactivate()
@@ -78,7 +82,7 @@ namespace SIncLib
             Window = WindowManager.SpawnWindow();
             Window.InitialTitle = Window.TitleText.text = Window.NonLocTitle = title;
             Window.MinSize.x = 800;
-            Window.MinSize.y = 600;
+            Window.MinSize.y = 630;
             Window.name = "SIncLibPortingManager";
             Window.MainPanel.name = "SIncLibPortingManagerPanel";
 
@@ -97,6 +101,9 @@ namespace SIncLib
                 PlayerPrefs.Save();
             }, Window);
 
+
+            Utils.AddButton("Test Porting", new Rect(500, 50, 250, 32), TestPorting, Window);
+
             Utils.AddLabel("Porting Teams: ", new Rect(10, 60, 250, 32), Window);
             Button teamButton = Utils.AddButton("SELECT TEAM", new Rect(270, 50, 250, 32), ShowTeamWindow, Window);
             TeamText = teamButton.GetComponentInChildren<Text>();
@@ -105,7 +112,7 @@ namespace SIncLib
             Utils.AddLabel("Support products for (months): ", new Rect(10, 100, 250, 32), Window);
             Utils.AddIntField(PortingBehaviour.Instance.SupportForMonths, new Rect(270, 90, 250, 32), i =>
             {
-                PortingBehaviour.Instance.MinimumUserbase = i;
+                PortingBehaviour.Instance.SupportForMonths = i;
                 PlayerPrefs.SetInt("SupportForMonths", i);
                 PlayerPrefs.Save();
             }, Window);
@@ -126,7 +133,16 @@ namespace SIncLib
                 PlayerPrefs.Save();
             }, Window);
 
+            Utils.AddLabel("Always port to inhouse OS", new Rect(10, 220, 250, 32), Window);
+            Utils.AddToggle("", new Rect(270, 220, 250, 32), PortingBehaviour.Instance.AlwaysPortToInhouseOS, b =>
+            {
+                PortingBehaviour.Instance.AlwaysPortToInhouseOS = b;
+                PlayerPrefs.SetInt("AlwaysPortToInhouseOS", b ? 1 : 0);
+                PlayerPrefs.Save();
+            }, Window);
+
             RenderJobWindow();
+
         }
 
         private void TestPorting()
@@ -138,7 +154,7 @@ namespace SIncLib
 
         private void RenderJobWindow()
         {
-            ActiveJobs = Utils.AddListView(new Rect(10, 220, -20, -200 - 30), Window);
+            ActiveJobs = Utils.AddListView(new Rect(10, 250, -20, -200 - 30), Window);
 
             var nameColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("Name", x => x.Product.Name, false, new float?(220f), false, true);
             var osColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("OS", x => x.TargetProduct.Name, false, new float?(220f), false, true);
@@ -168,7 +184,6 @@ namespace SIncLib
                     PortingBehaviour.Instance.PortingTeams.Clear();
                     if (c != null)
                     {
-                        Console.Log("Outsourced porting to " + c.Name);
                         PortingBehaviour.Instance.OutsourcedPorting = c;
                         PlayerPrefs.SetInt("OutsourcedPorting", (int)c.ID);
                         PlayerPrefs.DeleteKey("PortingTeams");
@@ -192,7 +207,6 @@ namespace SIncLib
 
         private void UpdateTeamText()
         {
-            Console.Log("Updating team text");
             if (PortingBehaviour.Instance.OutsourcedPorting != null)
             {
                 TeamText.text = PortingBehaviour.Instance.OutsourcedPorting.Name;
@@ -204,7 +218,6 @@ namespace SIncLib
                         GameSettings.Instance.sActorManager.Teams.ContainsKey(x))
                     .ToHashSet();
                 TeamText.text = PortingBehaviour.Instance.PortingTeams.GetListAbbrev("Team");
-                Console.Log("Porting teams: " + TeamText.text);
             }
         }
 
@@ -221,11 +234,6 @@ namespace SIncLib
                 ActiveJobs.UpdateInUI();
                 UpdateListView();
             }
-        }
-
-        internal void UpdatePortingJob()
-        {
-            TestPorting();
         }
     }
 }

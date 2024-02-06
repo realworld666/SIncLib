@@ -32,6 +32,36 @@ namespace SIncLib
                 new Rect(0, 0, 0, 0));
         }
 
+        private void Start()
+        {
+            SceneManager.sceneLoaded -= OnLevelFinishedLoading;
+            SceneManager.sceneLoaded += OnLevelFinishedLoading;
+        }
+
+        private void OnDestroy()
+        {
+            SceneManager.sceneLoaded -= OnLevelFinishedLoading;
+        }
+
+        private void OnLevelFinishedLoading(Scene scene, LoadSceneMode arg1)
+        {
+            if (scene == null || scene.name == null)
+            {
+                return;
+            }
+
+            if (SceneManager.GetActiveScene().name.Equals("MainScene"))
+            {
+                SpawnButton();
+            }
+
+            //Other scenes include MainScene and Customization
+            if (scene.name.Equals("MainMenu") && Window != null && Window.gameObject != null)
+            {
+                OnDeactivate();
+            }
+        }
+
         public override void OnDeactivate()
         {
             if (btn != null)

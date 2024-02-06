@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Console = DevConsole.Console;
 
 namespace SIncLib
@@ -20,7 +21,7 @@ namespace SIncLib
         public int MinimumUserbase = 1000;
         public int ConcurrentJobs = 1;
         public bool Enabled = false;
-
+        public bool AlwaysPortToInhouseOS;
 
         private void Awake()
         {
@@ -50,6 +51,7 @@ namespace SIncLib
             MinimumUserbase = PlayerPrefs.GetInt("MinimumUserbase", 1000);
             ConcurrentJobs = PlayerPrefs.GetInt("ConcurrentJobs", 1);
             Enabled = PlayerPrefs.GetInt("PortingEnabled", 0) == 1;
+            AlwaysPortToInhouseOS = PlayerPrefs.GetInt("AlwaysPortToInhouseOS", 0) == 1;
         }
 
         private void Start()
@@ -61,10 +63,20 @@ namespace SIncLib
             TimeOfDayOnOnDayPassed(null, null);
             TimeOfDay.OnDayPassed += TimeOfDayOnOnDayPassed;
 
+            SceneManager.sceneLoaded -= OnLevelFinishedLoading;
+            SceneManager.sceneLoaded += OnLevelFinishedLoading;
+        }
+
+        // Recompute the porting job queue when the game is loaded
+        private void OnLevelFinishedLoading(Scene arg0, LoadSceneMode arg1)
+        {
+            TimeOfDayOnOnDayPassed(null, null);
         }
 
         private void OnDestroy()
         {
+            SceneManager.sceneLoaded -= OnLevelFinishedLoading;
+
             TimeOfDay.OnDayPassed -= TimeOfDayOnOnDayPassed;
         }
 
@@ -123,6 +135,21 @@ namespace SIncLib
                     {
                         continue;
                     }
+
+                    // If this OS is a mock we might already have a porting job for it thats waiting for release
+                    // if so, we dont want to add another one
+                    if (os.IsMock &&
+                        GameSettings.Instance.MyCompany
+                            .WorkItems.OfType<SoftwarePort>().Any(workItem =>
+                            {
+                                var portItem = workItem as SoftwarePort;
+                                Console.Log("Checking " + portItem.OSs.First().Product.Name + " is " + os.Name);
+                                return portItem.Product == product && portItem.OSs.First().Product == os;
+                            }))
+                    {
+                        continue;
+                    }
+
                     PortingJobQueue.Add(new PortingJob()
                     {
                         Product = product,
@@ -139,7 +166,7 @@ namespace SIncLib
 
         private List<SoftwareProduct> FilterAvailableTargets(SoftwareProduct p)
         {
-            List<SoftwareProduct> allProducts = GameSettings.Instance.simulation.GetAllProducts(true).ToList();
+            List<SoftwareProduct> allProducts = GameSettings.Instance.simulation.GetProductsWithMock(true).ToList<SoftwareProduct>();
 
             var companyFilter = p.Publishing != null ? p.Publishing.Publisher.ID : 0U;
             var catFilter = p.Type.HasOSLimits() ? p.Type.GetOSLimits().ToHashSet() : null;
@@ -149,12 +176,6 @@ namespace SIncLib
             {
                 if (!targetProd.Type.Name.Equals("Operating System"))
                 {
-                    return false;
-                }
-
-                if (targetProd.Userbase < MinimumUserbase)
-                {
-                    //Console.Log("Filtering out " + targetProd.Name + " user base " + targetProd.Userbase);
                     return false;
                 }
 
@@ -188,7 +209,28 @@ namespace SIncLib
                     return false;
                 }
 
-                //Console.Log("Keeping " + targetProd.Name);
+                // has this os got enough active users?
+                if (targetProd.Userbase < MinimumUserbase)
+                {
+                    // If we are always porting to inhouse OS, then we don't care about userbase
+                    if (!Instance.AlwaysPortToInhouseOS)
+                    {
+                        //Console.Log("Filtering out " + targetProd.Name + " user base " + targetProd.Userbase);
+                        return false;
+                    }
+                }
+
+                // if we are porting to one of our OSs then we only want OSs that are from the last 3 years
+                // get current date
+                var currentDate = TimeOfDay.Instance.GetDate();
+                // subtract the 36 months from the current date
+                var cutoffDate = currentDate - 36;
+                if (Instance.AlwaysPortToInhouseOS && !targetProd.IsMock && targetProd.GetReleaseDate() < cutoffDate)
+                {
+                    return false;
+                }
+
+                Console.Log("Keeping " + targetProd.Name + " is mock? " + targetProd.IsMock);
                 return true;
             }).ToList();
         }
@@ -201,9 +243,11 @@ namespace SIncLib
             }
 
             // check if any jobs are complete
-            foreach (var job in PortingJobQueue.Where(x => x.WorkItem != null && x.WorkItem.GetActualProgress() >= 1))
+            foreach (var job in PortingJobQueue.Where(x => x.WorkItem != null &&
+                (x.WorkItem.GetActualProgress() >= 1 || x.WorkItem.GetCurrentStage().Equals("MockOSPortWait".Loc()))))
             {
-                Console.Log("Job " + job.Product.Name + " finished");
+                job.WorkItem.Hidden = true;
+                job.WorkItem.RemoveDevTeam(job.Team);
                 // remove the job from the queue
                 PortingJobQueue.Remove(job);
             }
@@ -217,7 +261,6 @@ namespace SIncLib
                     var nextJob = PortingJobQueue.FirstOrDefault(job => job.WorkItem == null);
                     if (nextJob != null)
                     {
-                        Console.Log("Starting next job " + nextJob.Product.Name);
                         StartPortingJob(team, nextJob);
                     }
                 }
@@ -240,6 +283,8 @@ namespace SIncLib
             nextJob.IsPaused = false;
             nextJob.WorkItem = portingJob;
             nextJob.Team = team;
+
+            GameSettings.Instance.MyCompany.WorkItems.Add(portingJob);
 
             return;
 
