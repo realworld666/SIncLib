@@ -49,6 +49,7 @@
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>D:\Programs\Steam\steamapps\common\Software Inc\Software Inc_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>D:\Programs\Steam\steamapps\common\Software Inc\Software Inc_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>

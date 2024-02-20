@@ -159,7 +159,7 @@ namespace SIncLib
             var nameColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("Name", x => x.Product.Name, false, new float?(220f), false, true);
             var osColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("OS", x => x.TargetProduct.Name, false, new float?(220f), false, true);
             var teamColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("Team", x => x.Team == null ? "None" : x.Team.Name, false, new float?(150f), false, true);
-            var progressColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("Progress", x => x.WorkItem == null ? "Not started" : Mathf.RoundToInt(x.WorkItem.GetActualProgress() * 100f) + "%", false, new float?(100f), false, true);
+            var progressColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("Progress", x => GetProgress(x), false, new float?(100f), false, true);
             var pauseColumn = (GUIListView.ColumnDef)new GUIListView.ColumnDefinition<PortingJob>("Status", x => x.IsPaused ? "Paused" : "Running", false, new float?(100f), false, true);
 
             ActiveJobs.AddColumn(nameColumn);
@@ -169,6 +169,19 @@ namespace SIncLib
             ActiveJobs.AddColumn(pauseColumn);
 
             UpdateListView();
+        }
+
+        private static string GetProgress(PortingJob x)
+        {
+            if (x.WorkItem == null)
+            {
+                return "Not started";
+            }
+            if (x.WorkItem.GetCurrentStage().Equals("MockOSPortWait".Loc()))
+            {
+                return "MockOSPortWait".Loc();
+            }
+            return Mathf.RoundToInt(x.WorkItem.GetActualProgress() * 100f) + "%";
         }
 
         private void UpdateListView()

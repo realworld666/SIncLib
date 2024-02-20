@@ -7,6 +7,15 @@ namespace SIncLib
 {
     public class Utils
     {
+        public static RectTransform AddPanel(Rect rect, GUIWindow window = null)
+        {
+            if (window == null)
+                window = SIncLibUI.Window;
+
+            RectTransform panel = WindowManager.SpawnPanel();
+            WindowManager.AddElementToWindow(panel.gameObject, window, rect, new Rect(0, 0, 0, 0));
+            return panel;
+        }
         public static Button AddButton(string Text, UnityAction Action, ref List<GameObject> Buttons)
         {
             Button x = WindowManager.SpawnButton();
@@ -21,56 +30,90 @@ namespace SIncLib
             if (window == null)
                 window = SIncLibUI.Window;
 
+            return AddButton(Text, Button, Action, window.MainPanel);
+        }
+
+        public static Button AddButton(string Text, Rect Button, UnityAction Action, GameObject panel)
+        {
             Button x = WindowManager.SpawnButton();
             x.GetComponentInChildren<UnityEngine.UI.Text>().text = Text;
             x.onClick.AddListener(Action);
-            WindowManager.AddElementToWindow(x.gameObject, window, Button, new Rect(0, 0, 0, 0));
+            WindowManager.AddElementToElement(x.gameObject, panel, Button, new Rect(0, 0, 0, 0));
             return x;
         }
 
-        public static void AddInputBox(string Text, Rect InputBox, UnityAction<string> Action, GUIWindow window = null)
+        public static InputField AddInputBox(string Text, Rect InputBox, UnityAction<string> Action, GUIWindow window = null)
         {
             if (window == null)
                 window = SIncLibUI.Window;
 
+            return AddInputBox(Text, InputBox, Action, window.MainPanel);
+        }
+
+        public static InputField AddInputBox(string Text, Rect InputBox, UnityAction<string> Action, GameObject panel)
+        {
             InputField x = WindowManager.SpawnInputbox();
             x.text = Text;
             x.onValueChanged.AddListener(Action);
-            WindowManager.AddElementToWindow(x.gameObject, window, InputBox, new Rect(0, 0, 0, 0));
+            WindowManager.AddElementToElement(x.gameObject, panel, InputBox, new Rect(0, 0, 0, 0));
+
+            return x;
         }
 
-        public static void AddIntField(int Value, Rect InputBox, UnityAction<int> Action, GUIWindow window = null)
+        public static InputField AddIntField(int Value, Rect InputBox, UnityAction<int> Action, GUIWindow window = null)
         {
             if (window == null)
                 window = SIncLibUI.Window;
 
+            return AddIntField(Value, InputBox, Action, window.MainPanel);
+        }
+
+        public static InputField AddIntField(int Value, Rect InputBox, UnityAction<int> Action, GameObject panel)
+        {
             InputField x = WindowManager.SpawnInputbox();
             x.text = Value.ToString();
             x.contentType = InputField.ContentType.IntegerNumber;
             x.onValueChanged.AddListener(value => Action.Invoke(int.Parse(value)));
-            WindowManager.AddElementToWindow(x.gameObject, window, InputBox, new Rect(0, 0, 0, 0));
+            WindowManager.AddElementToElement(x.gameObject, panel, InputBox, new Rect(0, 0, 0, 0));
+
+            return x;
         }
 
-        public static void AddLabel(string Text, Rect Label, GUIWindow window = null)
+        public static Text AddLabel(string Text, Rect Label, GUIWindow window = null)
         {
             if (window == null)
                 window = SIncLibUI.Window;
 
+            return AddLabel(Text, Label, window.MainPanel);
+        }
+
+        public static Text AddLabel(string Text, Rect Label, GameObject panel)
+        {
             Text x = WindowManager.SpawnLabel();
             x.text = Text;
-            WindowManager.AddElementToWindow(x.gameObject, window, Label, new Rect(0, 0, 0, 0));
+            WindowManager.AddElementToElement(x.gameObject, panel, Label, new Rect(0, 0, 0, 0));
+
+            return x;
         }
 
-        public static void AddToggle(string Text, Rect rect, bool isOn, UnityAction<bool> Action, GUIWindow window = null)
+        public static Toggle AddToggle(string Text, Rect rect, bool isOn, UnityAction<bool> Action, GUIWindow window = null)
         {
             if (window == null)
                 window = SIncLibUI.Window;
 
+            return AddToggle(Text, rect, isOn, Action, window.MainPanel);
+        }
+
+        public static Toggle AddToggle(string Text, Rect rect, bool isOn, UnityAction<bool> Action, GameObject panel)
+        {
             Toggle toggle = WindowManager.SpawnCheckbox();
-            toggle.GetComponentInChildren<UnityEngine.UI.Text>().text = Text;
+            Text textComponent = toggle.GetComponentInChildren<UnityEngine.UI.Text>();
+            textComponent.text = Text;
             toggle.isOn = isOn;
             toggle.onValueChanged.AddListener(Action);
-            WindowManager.AddElementToWindow(toggle.gameObject, window, rect, new Rect(0, 0, 0, 0));
+            WindowManager.AddElementToElement(toggle.gameObject, panel, rect, new Rect(0, 0, 0, 0));
+
+            return toggle;
         }
 
         public static GUIListView AddListView(Rect rect, GUIWindow window = null)
@@ -78,9 +121,14 @@ namespace SIncLib
             if (window == null)
                 window = SIncLibUI.Window;
 
+            return AddListView(rect, window.MainPanel);
+        }
+
+        public static GUIListView AddListView(Rect rect, GameObject panel)
+        {
             GUIListView listView = WindowManager.SpawnList();
 
-            WindowManager.AddElementToWindow(listView.gameObject, window, rect, new Rect(0, 0, 1f, 1f));
+            WindowManager.AddElementToElement(listView.gameObject, panel, rect, new Rect(0, 0, 1f, 1f));
 
             return listView;
         }

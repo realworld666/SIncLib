@@ -130,34 +130,41 @@ namespace SIncLib
 
                 foreach (var os in supportedOSs)
                 {
+                    // console.log all of the OSs that are available to port to
+                    //Console.Log("Adding " + product.Name + " to " + os.Name);
+
                     // if not already in the queue with same product and same target
                     if (PortingJobQueue.Any(x => x.Product == product && x.TargetProduct == os))
                     {
                         continue;
                     }
 
-                    // If this OS is a mock we might already have a porting job for it thats waiting for release
-                    // if so, we dont want to add another one
-                    if (os.IsMock &&
-                        GameSettings.Instance.MyCompany
-                            .WorkItems.OfType<SoftwarePort>().Any(workItem =>
+                    // If we already have a porting job in progress then link it
+                    var portingJob = GameSettings.Instance.MyCompany
+                            .WorkItems.OfType<SoftwarePort>().FirstOrDefault(workItem =>
                             {
                                 var portItem = workItem as SoftwarePort;
-                                Console.Log("Checking " + portItem.OSs.First().Product.Name + " is " + os.Name);
-                                return portItem.Product == product && portItem.OSs.First().Product == os;
-                            }))
+                                if (portItem == null || portItem.OSs == null || portItem.OSs.Count == 0)
+                                {
+                                    return false;
+                                }
+                                //Console.Log("Checking " + portItem.OSs.First().Product.Name + " is " + os.Name);
+                                return portItem.OSs.First().Product == os && product == portItem.Product;
+                            });
+                    if (portingJob != null)
                     {
-                        continue;
+                        portingJob.FixReferences();
                     }
-
+                    //Console.Log("Porting job is " + (portingJob != null ? "not null" : "null"));
                     PortingJobQueue.Add(new PortingJob()
                     {
                         Product = product,
                         TargetProduct = os,
-                        Team = null,
-                        WorkItem = null,
+                        Team = (portingJob != null && portingJob.GetDevTeams() != null && portingJob.GetDevTeams().Count > 0) ? portingJob.GetDevTeams().FirstOrDefault() : null,
+                        WorkItem = portingJob,
                         IsPaused = true
                     });
+                    //Console.Log("Added " + product.Name + " to " + os.Name);
                 }
             }
 
@@ -201,13 +208,13 @@ namespace SIncLib
                     //Console.Log("2 Filtering out " + targetProd.Name);
                     return false;
                 }
-                SoftwarePort softwarePort = GameSettings.Instance.MyCompany.WorkItems.OfType<SoftwarePort>().FirstOrDefault((z => z.Product == p));
+                /*SoftwarePort softwarePort = GameSettings.Instance.MyCompany.WorkItems.OfType<SoftwarePort>().FirstOrDefault((z => z.Product == p));
 
                 if (softwarePort != null && softwarePort.OSs.Any((z => z.Product == targetProd || z.Product.MockSucceeded == targetProd)))
                 {
                     //Console.Log("3 Filtering out " + targetProd.Name);
                     return false;
-                }
+                }*/
 
                 // has this os got enough active users?
                 if (targetProd.Userbase < MinimumUserbase)
@@ -230,7 +237,7 @@ namespace SIncLib
                     return false;
                 }
 
-                Console.Log("Keeping " + targetProd.Name + " is mock? " + targetProd.IsMock);
+                //Console.Log("Keeping " + targetProd.Name + " is mock? " + targetProd.IsMock);
                 return true;
             }).ToList();
         }
@@ -247,9 +254,16 @@ namespace SIncLib
                 (x.WorkItem.GetActualProgress() >= 1 || x.WorkItem.GetCurrentStage().Equals("MockOSPortWait".Loc()))))
             {
                 job.WorkItem.Hidden = true;
-                job.WorkItem.RemoveDevTeam(job.Team);
-                // remove the job from the queue
-                PortingJobQueue.Remove(job);
+                if (job.WorkItem.GetDevTeams().Count > 0 && job.Team != null)
+                {
+                    job.WorkItem.RemoveDevTeam(job.Team);
+                }
+                // remove the job from the queue unless its waiting for the OS to be released
+                if (!job.WorkItem.GetCurrentStage().Equals("MockOSPortWait".Loc()))
+                {
+                    PortingJobQueue.Remove(job);
+                }
+
             }
 
             // check if any of the porting teams have less than ConcurrentJobs porting jobs running
@@ -283,7 +297,7 @@ namespace SIncLib
             nextJob.IsPaused = false;
             nextJob.WorkItem = portingJob;
             nextJob.Team = team;
-
+            portingJob.FixReferences();
             GameSettings.Instance.MyCompany.WorkItems.Add(portingJob);
 
             return;
