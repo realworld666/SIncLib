@@ -102,7 +102,7 @@ namespace SIncLib
             }, Window);
 
 
-            Utils.AddButton("Test Porting", new Rect(500, 50, 250, 32), TestPorting, Window);
+            //Utils.AddButton("Test Porting", new Rect(500, 50, 250, 32), TestPorting, Window);
 
             Utils.AddLabel("Porting Teams: ", new Rect(10, 60, 250, 32), Window);
             Button teamButton = Utils.AddButton("SELECT TEAM", new Rect(270, 50, 250, 32), ShowTeamWindow, Window);
