@@ -146,7 +146,7 @@ namespace SIncLib
 
             Utils.AddLabel("Auto stock levels at % of last months sales", new Rect(10, 50, 600, 32), Panel.gameObject);
             Utils.AddIntField(Mathf.CeilToInt(SIncLibBehaviour.Instance.ManageStock * 100),
-                new Rect(270, 90, 130, 32),
+                new Rect(290, 40, 130, 32),
                 value =>
                 {
                     SIncLibBehaviour.Instance.ManageStock = value / 100f;
@@ -154,7 +154,7 @@ namespace SIncLib
                     PlayerPrefs.Save();
                 }, Panel.gameObject);
 
-            Utils.AddToggle("Auto Buy Stock Notifications",
+            Utils.AddToggle("Show Notifications When Stock Bought?",
                 new Rect(10, 90, 600, 32),
                 SIncLibBehaviour.Instance.ManageStockNotifications,
                 state =>
