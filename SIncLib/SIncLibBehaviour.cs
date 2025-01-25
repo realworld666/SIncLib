@@ -22,6 +22,7 @@ namespace SIncLib
         public bool AdjustHR { get; set; }
         public bool StockNotifications { get; set; }
         public float ManageStock { get; internal set; }
+        public float ManageAddonStock { get; internal set; }
         public bool ManageStockNotifications { get; internal set; }
 
         private void Awake()
@@ -30,6 +31,7 @@ namespace SIncLib
 
             StockNotifications = PlayerPrefs.GetInt("SIncLib_StockNotifications", 0) == 1 ? true : false;
             ManageStock = PlayerPrefs.GetFloat("SIncLib_ManageStock", 0);
+            ManageAddonStock = PlayerPrefs.GetFloat("SIncLib_ManageAddonStock", 0);
             ManageStockNotifications = PlayerPrefs.GetInt("SIncLib_ManageStockNotifications", 1) == 1 ? true : false;
             HidePrintingNotifications = PlayerPrefs.GetInt("SIncLib_HidePrintingNotifications", 0) == 1 ? true : false;
         }
@@ -113,7 +115,7 @@ namespace SIncLib
                 UpdateStockChecker();
             }
 
-            if (ManageStock > 0)
+            if (ManageStock > 0 || ManageAddonStock > 0)
             {
                 UpdateInventory();
             }
@@ -201,14 +203,14 @@ namespace SIncLib
             if (p.Type.Hardware)
             {
                 var parent = p.Parent;
-                if (p.PhysicalCopies < (p.GetLastPhysicalSales() + parent.GetLastPhysicalSales()) * ManageStock)
+                if (p.PhysicalCopies < (p.GetLastPhysicalSales() + parent.GetLastPhysicalSales()) * ManageAddonStock)
                 {
                     HashSet<AssemblyLine> newLines = GameSettings.Instance.GetAssemblyLines()
                     .Where<AssemblyLine>((Func<AssemblyLine, bool>)
                     (x => x.IsCompatible(p.Manufacturing, p.HardwareMask, p.HardwareInputMask) > 0)).ToHashSet<AssemblyLine>();
 
                     Console.Log("Found " + newLines.Count + " assembly lines for " + name);
-                    long order = (Mathf.CeilToInt((p.GetLastPhysicalSales() + parent.GetLastPhysicalSales()) * ManageStock) - p.PhysicalCopies);
+                    long order = (Mathf.CeilToInt((p.GetLastPhysicalSales() + parent.GetLastPhysicalSales()) * ManageAddonStock) - p.PhysicalCopies);
 
                     if (newLines.Count > 0)
                     {
@@ -227,9 +229,9 @@ namespace SIncLib
                 return;
             }
 
-            if (p.PhysicalCopies < p.GetLastPhysicalSales() * ManageStock)
+            if (p.PhysicalCopies < p.GetLastPhysicalSales() * ManageAddonStock)
             {
-                long stockToBuy = Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageStock) - p.PhysicalCopies;
+                long stockToBuy = Mathf.CeilToInt(p.GetLastPhysicalSales() * ManageAddonStock) - p.PhysicalCopies;
 
                 // Do we have printers?
                 if (GameSettings.Instance.ProductPrinters.Count > 0)

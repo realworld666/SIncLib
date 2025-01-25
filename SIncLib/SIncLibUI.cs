@@ -121,6 +121,7 @@ namespace SIncLib
             Utils.AddButton("Game Mods", new Rect(10, 10, 250, 32), () => ShowGameMods(), Window);
             Utils.AddButton("Team Manager", new Rect(10, 50, 250, 32), () => ShowTeamManager(), Window);
             Utils.AddButton("Porting Manager", new Rect(10, 90, 250, 32), () => PortingManagerUI.Show(), Window);
+            Utils.AddButton("Addon Manager", new Rect(10, 130, 250, 32), () => AddOnManagerUI.Show(ref Panel), Window);
 
 
             ShowGameMods();
@@ -154,8 +155,18 @@ namespace SIncLib
                     PlayerPrefs.Save();
                 }, Panel.gameObject);
 
+            Utils.AddLabel("Auto stock add-ons at % of last months sales", new Rect(10, 90, 600, 32), Panel.gameObject);
+            Utils.AddIntField(Mathf.CeilToInt(SIncLibBehaviour.Instance.ManageAddonStock * 100),
+                new Rect(290, 80, 130, 32),
+                value =>
+                {
+                    SIncLibBehaviour.Instance.ManageAddonStock = value / 100f;
+                    PlayerPrefs.SetFloat("SIncLib_ManageAddonStock", SIncLibBehaviour.Instance.ManageAddonStock);
+                    PlayerPrefs.Save();
+                }, Panel.gameObject);
+
             Utils.AddToggle("Show Notifications When Stock Bought?",
-                new Rect(10, 90, 600, 32),
+                new Rect(10, 130, 600, 32),
                 SIncLibBehaviour.Instance.ManageStockNotifications,
                 state =>
                 {
@@ -165,7 +176,7 @@ namespace SIncLib
                 }, Panel.gameObject);
 
             Utils.AddToggle("Hide Printing Complete Notifications",
-                               new Rect(10, 130, 600, 32),
+                               new Rect(10, 170, 600, 32),
                                               SIncLibBehaviour.Instance.HidePrintingNotifications,
                                                              state =>
                                                              {

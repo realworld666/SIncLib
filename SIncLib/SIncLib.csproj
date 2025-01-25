@@ -55,6 +55,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddOnBehaviour.cs" />
+    <Compile Include="AddOnManagerUI.cs" />
     <Compile Include="PortingBehaviour.cs" />
     <Compile Include="PortingJob.cs" />
     <Compile Include="PortingManagerUI.cs" />
